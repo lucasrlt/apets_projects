@@ -10,22 +10,20 @@ class Share:
     A secret share in a finite field.
     """
 
-    def __init__(self, *args, **kwargs):
-        # Adapt constructor arguments as you wish
-        raise NotImplementedError("You need to implement this method.")
+    def __init__(self, value: str):
+        self.value = value
 
     def __repr__(self):
-        # Helps with debugging.
-        raise NotImplementedError("You need to implement this method.")
+        return f"Share({self.value})"
 
     def __add__(self, other):
-        raise NotImplementedError("You need to implement this method.")
+        return self.value + other.value
 
     def __sub__(self, other):
-        raise NotImplementedError("You need to implement this method.")
+        return self.value - other.value
 
     def __mul__(self, other):
-        raise NotImplementedError("You need to implement this method.")
+        return self.value * other.value
 
 
 def share_secret(secret: int, num_shares: int) -> List[Share]:
@@ -35,7 +33,11 @@ def share_secret(secret: int, num_shares: int) -> List[Share]:
 
 def reconstruct_secret(shares: List[Share]) -> int:
     """Reconstruct the secret from shares."""
-    raise NotImplementedError("You need to implement this method.")
+    sum = 0
+    for share in shares:
+        sum += share.value
+        
+    return sum
 
 
 # Feel free to add as many methods as you want.

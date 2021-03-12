@@ -28,7 +28,6 @@ class Expression:
     """
     Base class for an arithmetic expression.
     """
-
     def __init__(
             self,
             id: Optional[bytes] = None
@@ -39,15 +38,22 @@ class Expression:
         self.id = id
 
     def __add__(self, other):
-        raise NotImplementedError("You need to implement this method.")
+        if isinstance(other, Scalar):
+            return AdditionScalar(self, other)
+        elif isinstance(other, Secret):
+            return AdditionSecret(self, other)
+
+        # raise NotImplementedError("You need to implement this method.")
 
 
     def __sub__(self, other):
-        raise NotImplementedError("You need to implement this method.")
+        pass
+        # raise NotImplementedError("You need to implement this method.")
 
 
     def __mul__(self, other):
-        raise NotImplementedError("You need to implement this method.")
+        pass
+        # raise NotImplementedError("You need to implement this method.")
 
 
     def __hash__(self):
@@ -82,7 +88,6 @@ class Scalar(Expression):
 
 class Secret(Expression):
     """Term representing a secret finite field value (variable)."""
-
     def __init__(
             self,
             value: Optional[int] = None,
@@ -100,5 +105,35 @@ class Secret(Expression):
 
     # Feel free to add as many methods as you like.
 
+class BinOp(Expression):
+    def __init__(self, left, op, right):
 
-# Feel free to add as many classes as you like.
+
+
+class AdditionSecret(Expression):
+    def __init__(
+        self,
+        value1: Secret,
+        value2: Secret
+    ):
+        self.value1 = value1
+        self.value2 = value2
+
+    def __repr__(self): 
+        return (
+            f"{repr(self.value1)} + {repr(self.value2)}"
+        )
+
+class AdditionScalar(Expression):
+    def __init__(
+        self, 
+        value1: Secret,
+        value2: Scalar
+    ):
+        self.value1 = value1
+        self.value2 = value2
+
+    def __repr__(self): 
+        return (
+            f"{repr(self.value1)} + {repr(self.value2)}"
+        )

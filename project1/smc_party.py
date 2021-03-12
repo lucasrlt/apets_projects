@@ -56,6 +56,8 @@ class SMCParty:
         self.protocol_spec = protocol_spec
         self.value_dict = value_dict
 
+        
+
 
     def run(self) -> int:
         """
@@ -63,6 +65,20 @@ class SMCParty:
         """
         raise NotImplementedError("You need to implement this method.")
 
+    # def add_secret(self, left: Secret, right: Secret) -> Share:
+    #     # split secret
+    #     # broadcast shares
+    #     # compute ... 
+    #     pass
+
+    # def add(self, left, right) -> Share:
+    #     if isinstance(right, Scalar):
+    #         return add_secret(self, other)
+    #     elif isinstance(other, Secret):
+    #         return add_scalar(left, right)
+    #     else:
+    #         self.add_secret(self.process_expression(left), self.process_expression(right))
+            
 
     # Suggestion: To process expressions, make use of the *visitor pattern* like so:
     def process_expression(
