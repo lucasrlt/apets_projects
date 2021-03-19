@@ -38,10 +38,7 @@ class Expression:
         self.id = id
 
     def __add__(self, other):
-        if isinstance(other, Scalar):
-            return AdditionScalar(self, other)
-        elif isinstance(other, Secret):
-            return AdditionSecret(self, other)
+        return AddOp(self, other)
 
         # raise NotImplementedError("You need to implement this method.")
 
@@ -52,8 +49,7 @@ class Expression:
 
 
     def __mul__(self, other):
-        pass
-        # raise NotImplementedError("You need to implement this method.")
+        return MultOp(self, other)        
 
 
     def __hash__(self):
@@ -105,35 +101,30 @@ class Secret(Expression):
 
     # Feel free to add as many methods as you like.
 
-class BinOp(Expression):
-    def __init__(self, left, op, right):
-
-
-
-class AdditionSecret(Expression):
+class AddOp(Expression):
     def __init__(
         self,
-        value1: Secret,
-        value2: Secret
+        a: Expression,
+        b: Expression
     ):
-        self.value1 = value1
-        self.value2 = value2
+        self.a = a
+        self.b = b
 
     def __repr__(self): 
         return (
-            f"{repr(self.value1)} + {repr(self.value2)}"
+            f"{repr(self.a)} + {repr(self.b)}"
         )
 
-class AdditionScalar(Expression):
+class MultOp(Expression):
     def __init__(
-        self, 
-        value1: Secret,
-        value2: Scalar
+        self,
+        a: Expression,
+        b: Expression
     ):
-        self.value1 = value1
-        self.value2 = value2
+        self.a = a
+        self.b = b
 
     def __repr__(self): 
         return (
-            f"{repr(self.value1)} + {repr(self.value2)}"
-        )
+            f"{repr(self.a)} * {repr(self.b)}"
+        )    

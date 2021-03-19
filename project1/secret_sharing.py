@@ -3,7 +3,7 @@ Secret sharing scheme.
 """
 
 from typing import List
-
+from random import randint
 
 class Share:
     """
@@ -28,14 +28,19 @@ class Share:
 
 def share_secret(secret: int, num_shares: int) -> List[Share]:
     """Generate secret shares."""
-    raise NotImplementedError("You need to implement this method.")
+    shares = []
+    for i in range(num_shares - 1):
+        shares.append(randint(1, secret - sum(shares) - num_shares))
+    shares.append(secret - sum(shares))
+
+    return shares
 
 
 def reconstruct_secret(shares: List[Share]) -> int:
     """Reconstruct the secret from shares."""
     sum = 0
     for share in shares:
-        sum += share.value
+        sum += int(share.value)
         
     return sum
 
