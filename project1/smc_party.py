@@ -57,6 +57,8 @@ class SMCParty:
         self.client_id = client_id
         self.protocol_spec = protocol_spec
         self.value_dict = value_dict
+        self.secret_ids_dict = {}
+        self.secret_ids = []
         self.shares_dict = {}
 
         
@@ -66,7 +68,31 @@ class SMCParty:
         """
         The method the client use to do the SMC.
         """
-        print(self.value_dict)
+
+        # broadcast and get secrets ids from clients
+        self.comm.publish_message(f"client_secrets_id", ",".join([x.id.decode() for x in self.value_dict.keys()]))
+
+        for sid in self.protocol_spec.participant_ids:
+            self.secret_ids_dict[sid] = self.comm.retrieve_public_message(sid, "client_secrets_id").decode().split(",")
+            for id in self.secret_ids_dict[sid]:
+                self.secret_ids.append(id)
+
+        print("Secrets dict: ", self.secret_ids_dict)
+
+        
+        # broadcast own secret's shares to clients
+        for secret in self.value_dict.keys():
+            shares = share_secret(self.value_dict[secret], len(self.protocol_spec.participant_ids))
+            for idx, sid in enumerate(self.protocol_spec.participant_ids):
+                self.comm.send_private_message(sid, secret.id.decode(), str(shares[idx]))
+
+        # retrieve own share for each secret
+        for sid in self.protocol_spec.participant_ids:
+            for secret_id in self.secret_ids_dict[sid]:
+                self.shares_dict[secret_id] = Share(int(self.comm.retrieve_private_message(secret_id).decode()))
+        
+
+        print("Value dict: ", self.shares_dict)
 
         # for secret in self.value_dict.values():
         #     shares = share_secret(secret, len(self.protocol_spec.participant_ids))
@@ -86,6 +112,8 @@ class SMCParty:
             shares.append(Share(int(self.comm.retrieve_public_message(sid, "computed share").decode())))
         return reconstruct_secret(shares)
 
+
+    
     # def add_secret(self, a: Secret, b: Secret) -> Share:
     #     a_share, b_share = -1, -1
     #     num_participants = len(self.protocol_spec.participant_ids)
@@ -110,6 +138,9 @@ class SMCParty:
 
     #     return Share(a_share + b_share)
 
+    def add_secret(self, a: Share, b: Share) -> Share:
+        return Share(a.value + b.value)
+
   
 
     # Suggestion: To process expressions, make use of the *visitor pattern* like so:
@@ -120,23 +151,19 @@ class SMCParty:
 
         if isinstance(expr, AddOp):
             if isinstance(expr.a, Secret) and isinstance(expr.b, Secret):
-                print("Hallo", repr(expr))
-                res = self.add_secret(expr.a, expr.b)
+                res = self.add_secret(self.shares_dict[expr.a.id.decode()], self.shares_dict[expr.b.id.decode()])
 
-                # a + b
-                # Secret()
-                self.shares_dict[expr.a.id] + self.shares_dict[expr.b.id] 
+                print("Heu genre ?")
                 print(f"{self.client_id} Res:  {res}" )
                 return res
             else:
                 print("Coucou ici")
                 expr_a = self.process_expression(expr.a)
                 expr_b = self.process_expression(expr.b)
-                print(f"{self.client_id} coucou_a: {expr_a}")
-                print(f"{self.client_id} coucou_b: {expr_b}")
+
                 return self.add_secret(expr_a, expr_b)
         elif isinstance(expr, Secret):
-            return expr
+            return self.shares_dict[expr.id.decode()]
 
         # if expr is an addition operation
         # :
