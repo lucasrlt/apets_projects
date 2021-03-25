@@ -44,7 +44,7 @@ class Expression:
 
 
     def __sub__(self, other):
-        pass
+        return SubOp(self, other)
         # raise NotImplementedError("You need to implement this method.")
 
 
@@ -114,6 +114,21 @@ class AddOp(Expression):
         return (
             f"{repr(self.a)} + {repr(self.b)}"
         )
+
+class SubOp(Expression):
+    def __init__(
+        self,
+        a: Expression,
+        b: Expression
+    ):
+        self.a = a
+        self.b = b
+
+    def __repr__(self): 
+        return (
+            f"{repr(self.a)} - {repr(self.b)}"
+        )
+
 
 class MultOp(Expression):
     def __init__(

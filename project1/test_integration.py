@@ -83,13 +83,13 @@ def test_suite1():
     charlie_secret = Secret()
 
     parties = {
-        "Alice": {alice_secret: 3},
-        "Bob": {bob_secret: 14},
-        "Charlie": {charlie_secret: 2}
+        "Alice": {alice_secret: 300},
+        "Bob": {bob_secret: 1400},
+        "Charlie": {charlie_secret: 200}
     }
 
     expr = (alice_secret + bob_secret + charlie_secret)
-    expected = 3 + 14 + 2
+    expected = 300 + 1400 + 200
     suite(parties, expr, expected)
 
 
@@ -111,130 +111,130 @@ def test_suite2():
     suite(parties, expr, expected)
 
 
-def test_suite3():
-    """
-    f(a, b, c) = (a + b + c) ∗ K
-    """
-    alice_secret = Secret()
-    bob_secret = Secret()
-    charlie_secret = Secret()
+# def test_suite3():
+#     """
+#     f(a, b, c) = (a + b + c) ∗ K
+#     """
+#     alice_secret = Secret()
+#     bob_secret = Secret()
+#     charlie_secret = Secret()
 
-    parties = {
-        "Alice": {alice_secret: 3},
-        "Bob": {bob_secret: 14},
-        "Charlie": {charlie_secret: 2}
-    }
+#     parties = {
+#         "Alice": {alice_secret: 3},
+#         "Bob": {bob_secret: 14},
+#         "Charlie": {charlie_secret: 2}
+#     }
 
-    expr = ((alice_secret + bob_secret + charlie_secret) * Scalar(5))
-    expected = (3 + 14 + 2) * 5
-    suite(parties, expr, expected)
-
-
-def test_suite4():
-    """
-    f(a, b, c) = (a + b + c) + K
-    """
-    alice_secret = Secret()
-    bob_secret = Secret()
-    charlie_secret = Secret()
-
-    parties = {
-        "Alice": {alice_secret: 3},
-        "Bob": {bob_secret: 14},
-        "Charlie": {charlie_secret: 2}
-    }
-
-    expr = ((alice_secret + bob_secret + charlie_secret) + Scalar(5))
-    expected = (3 + 14 + 2) + 5
-    suite(parties, expr, expected)
+#     expr = ((alice_secret + bob_secret + charlie_secret) * Scalar(5))
+#     expected = (3 + 14 + 2) * 5
+#     suite(parties, expr, expected)
 
 
-def test_suite5():
-    """
-    f(a, b, c) = (a ∗ K0 + b - c) + K1
-    """
-    alice_secret = Secret()
-    bob_secret = Secret()
-    charlie_secret = Secret()
+# def test_suite4():
+#     """
+#     f(a, b, c) = (a + b + c) + K
+#     """
+#     alice_secret = Secret()
+#     bob_secret = Secret()
+#     charlie_secret = Secret()
 
-    parties = {
-        "Alice": {alice_secret: 3},
-        "Bob": {bob_secret: 14},
-        "Charlie": {charlie_secret: 2}
-    }
+#     parties = {
+#         "Alice": {alice_secret: 3},
+#         "Bob": {bob_secret: 14},
+#         "Charlie": {charlie_secret: 2}
+#     }
 
-    expr = (((alice_secret * Scalar(5)) + bob_secret - charlie_secret) + Scalar(9))
-    expected = ((3 * 5) + 14 - 2) + 9
-    suite(parties, expr, expected)
-
-
-def test_suite6():
-    """
-    f(a, b, c, d) = a + b + c + d
-    """
-    alice_secret = Secret()
-    bob_secret = Secret()
-    charlie_secret = Secret()
-    david_secret = Secret()
-
-    parties = {
-        "Alice": {alice_secret: 3},
-        "Bob": {bob_secret: 14},
-        "Charlie": {charlie_secret: 2},
-        "David": {david_secret: 5}
-    }
-
-    expr = (alice_secret + bob_secret + charlie_secret + david_secret)
-    expected = 3 + 14 + 2 + 5
-    suite(parties, expr, expected)
+#     expr = ((alice_secret + bob_secret + charlie_secret) + Scalar(5))
+#     expected = (3 + 14 + 2) + 5
+#     suite(parties, expr, expected)
 
 
-def test_suite7():
-    """
-    f(a, b, c) = (a ∗ b) + (b ∗ c) + (c ∗ a)
-    """
-    alice_secret = Secret()
-    bob_secret = Secret()
-    charlie_secret = Secret()
+# def test_suite5():
+#     """
+#     f(a, b, c) = (a ∗ K0 + b - c) + K1
+#     """
+#     alice_secret = Secret()
+#     bob_secret = Secret()
+#     charlie_secret = Secret()
 
-    parties = {
-        "Alice": {alice_secret: 3},
-        "Bob": {bob_secret: 14},
-        "Charlie": {charlie_secret: 2}
-    }
+#     parties = {
+#         "Alice": {alice_secret: 3},
+#         "Bob": {bob_secret: 14},
+#         "Charlie": {charlie_secret: 2}
+#     }
 
-    expr = (
-        (alice_secret * bob_secret) +
-        (bob_secret * charlie_secret) +
-        (charlie_secret * alice_secret)
-    )
-    expected = ((3 * 14) + (14 * 2) + (2 * 3))
-    suite(parties, expr, expected)
+#     expr = (((alice_secret * Scalar(5)) + bob_secret - charlie_secret) + Scalar(9))
+#     expected = ((3 * 5) + 14 - 2) + 9
+#     suite(parties, expr, expected)
 
 
-def test_suite8():
-    """
-    f(a, b, c, d, e) = ((a + K0) + b ∗ K1 - c) ∗ (d + e)
-    """
-    alice_secret = Secret()
-    bob_secret = Secret()
-    charlie_secret = Secret()
-    david_secret = Secret()
-    elusinia_secret = Secret()
+# def test_suite6():
+#     """
+#     f(a, b, c, d) = a + b + c + d
+#     """
+#     alice_secret = Secret()
+#     bob_secret = Secret()
+#     charlie_secret = Secret()
+#     david_secret = Secret()
 
-    parties = {
-        "Alice": {alice_secret: 3},
-        "Bob": {bob_secret: 14},
-        "Charlie": {charlie_secret: 2},
-        "David": {david_secret: 5},
-        "Elusinia": {elusinia_secret: 7}
-    }
+#     parties = {
+#         "Alice": {alice_secret: 3},
+#         "Bob": {bob_secret: 14},
+#         "Charlie": {charlie_secret: 2},
+#         "David": {david_secret: 5}
+#     }
 
-    expr = (
-        (
-            (alice_secret + Scalar(8)) +
-            ((bob_secret * Scalar(9)) - charlie_secret)
-         ) * (david_secret + elusinia_secret)
-    )
-    expected = (((3 + 8) + (14 * 9) - 2) * (5 + 7))
-    suite(parties, expr, expected)
+#     expr = (alice_secret + bob_secret + charlie_secret + david_secret)
+#     expected = 3 + 14 + 2 + 5
+#     suite(parties, expr, expected)
+
+
+# def test_suite7():
+#     """
+#     f(a, b, c) = (a ∗ b) + (b ∗ c) + (c ∗ a)
+#     """
+#     alice_secret = Secret()
+#     bob_secret = Secret()
+#     charlie_secret = Secret()
+
+#     parties = {
+#         "Alice": {alice_secret: 3},
+#         "Bob": {bob_secret: 14},
+#         "Charlie": {charlie_secret: 2}
+#     }
+
+#     expr = (
+#         (alice_secret * bob_secret) +
+#         (bob_secret * charlie_secret) +
+#         (charlie_secret * alice_secret)
+#     )
+#     expected = ((3 * 14) + (14 * 2) + (2 * 3))
+#     suite(parties, expr, expected)
+
+
+# def test_suite8():
+#     """
+#     f(a, b, c, d, e) = ((a + K0) + b ∗ K1 - c) ∗ (d + e)
+#     """
+#     alice_secret = Secret()
+#     bob_secret = Secret()
+#     charlie_secret = Secret()
+#     david_secret = Secret()
+#     elusinia_secret = Secret()
+
+#     parties = {
+#         "Alice": {alice_secret: 3},
+#         "Bob": {bob_secret: 14},
+#         "Charlie": {charlie_secret: 2},
+#         "David": {david_secret: 5},
+#         "Elusinia": {elusinia_secret: 7}
+#     }
+
+#     expr = (
+#         (
+#             (alice_secret + Scalar(8)) +
+#             ((bob_secret * Scalar(9)) - charlie_secret)
+#          ) * (david_secret + elusinia_secret)
+#     )
+#     expected = (((3 + 8) + (14 * 9) - 2) * (5 + 7))
+#     suite(parties, expr, expected)

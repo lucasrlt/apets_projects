@@ -19,7 +19,7 @@ from communication import Communication
 from expression import (
     Expression,
     Secret,
-    AddOp
+    AddOp, SubOp
 )
 from protocol import ProtocolSpec
 from secret_sharing import(
@@ -141,6 +141,9 @@ class SMCParty:
     def add_secret(self, a: Share, b: Share) -> Share:
         return Share(a.value + b.value)
 
+
+    def sub_secret(self, a: Share, b: Share) -> Share:
+        return Share(a.value - b.value)
   
 
     # Suggestion: To process expressions, make use of the *visitor pattern* like so:
@@ -152,16 +155,19 @@ class SMCParty:
         if isinstance(expr, AddOp):
             if isinstance(expr.a, Secret) and isinstance(expr.b, Secret):
                 res = self.add_secret(self.shares_dict[expr.a.id.decode()], self.shares_dict[expr.b.id.decode()])
-
-                print("Heu genre ?")
-                print(f"{self.client_id} Res:  {res}" )
                 return res
             else:
-                print("Coucou ici")
                 expr_a = self.process_expression(expr.a)
                 expr_b = self.process_expression(expr.b)
-
                 return self.add_secret(expr_a, expr_b)
+        elif isinstance(expr, SubOp):
+            if isinstance(expr.a, Secret) and isinstance(expr.b, Secret):
+                res = self.sub_secret(self.shares_dict[expr.a.id.decode()], self.shares_dict[expr.b.id.decode()])
+                return res
+            else:
+                expr_a = self.process_expression(expr.a)
+                expr_b = self.process_expression(expr.b)
+                return self.sub_secret(expr_a, expr_b)
         elif isinstance(expr, Secret):
             return self.shares_dict[expr.id.decode()]
 
