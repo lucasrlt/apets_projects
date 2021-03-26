@@ -83,13 +83,13 @@ def test_suite1():
     charlie_secret = Secret()
 
     parties = {
-        "Alice": {alice_secret: 300},
-        "Bob": {bob_secret: 1400},
-        "Charlie": {charlie_secret: 200}
+        "Alice": {alice_secret: 3},
+        "Bob": {bob_secret: 14},
+        "Charlie": {charlie_secret: 2}
     }
 
     expr = (alice_secret + bob_secret + charlie_secret)
-    expected = 300 + 1400 + 200
+    expected = 3 + 14 + 2
     suite(parties, expr, expected)
 
 

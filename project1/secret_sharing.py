@@ -30,7 +30,8 @@ def share_secret(secret: int, num_shares: int) -> List[Share]:
     """Generate secret shares."""
     shares = []
     for i in range(num_shares - 1):
-        shares.append(randint(1, secret - sum(shares) - num_shares + i))
+        num_already_assigned = (num_shares-1) - i # -1 because a share can be 0
+        shares.append(randint(0, secret - sum(shares) - num_already_assigned))
     shares.append(secret - sum(shares))
 
     return shares
