@@ -96,7 +96,6 @@ class SMCParty:
         #     self.shares_dict[sid] = int(my_share.decode())
 
         expression = self.protocol_spec.expr
-        print("Computing: ", repr(expression))
         my_share = self.process_expression(expression)
         self.comm.publish_message("computed share", str(my_share.value))
         shares = []
@@ -157,12 +156,15 @@ class SMCParty:
             elif isinstance(expr.b, Scalar):
                 return self.process_expression(expr.a) * Share(str(expr.b.value))
             else:
-                a_i, b_i, c_i = self.comm.retrieve_beaver_triplet_shares(expr.id.decode())
-                x_share = self.shares_dict[expr.a.id.decode()] - a_i
-                y_share = self.shares_dict[expr.b.id.decode()] - b_i
+                expr_a = self.process_expression(expr.a)
+                expr_b = self.process_expression(expr.b)
 
-                self.comm.publish_message("castor_x", str(x_share));
-                self.comm.publish_message("castor_y", str(y_share));
+                a_i, b_i, c_i = tuple(map(lambda x: Share(str(x)), self.comm.retrieve_beaver_triplet_shares(expr.id.decode())))
+                x_share = expr_a - a_i
+                y_share = expr_b - b_i
+
+                self.comm.publish_message("castor_x", str(x_share.value));
+                self.comm.publish_message("castor_y", str(y_share.value));
 
                 x_shares = [] 
                 y_shares = []
@@ -170,37 +172,11 @@ class SMCParty:
                     x_shares.append(Share(self.comm.retrieve_public_message(sid, "castor_x").decode()))
                     y_shares.append(Share(self.comm.retrieve_public_message(sid, "castor_y").decode()))
 
-                x = reconstruct_secret(x_shares)
-                y = reconstruct_secret(y_share)
+                x = Share(str(reconstruct_secret(x_shares)))
+                y = Share(str(reconstruct_secret(y_shares)))
 
-                res = c_i + self.shares_dict[expr.a.id.decode()] * y + self.shares_dict[expr.b.id.decode()] * x
+                res = c_i + expr_a * y + expr_b * x
                 if self.protocol_spec.participant_ids.index(self.client_id) == 0:
                     res -= x * y
 
-
-                return Share(res)
-                # get beaver triplets a*b=c
-                # compute expr_a - a_share and expr_b - b_share and bdcast it
-                # reconstruct expr_a - a and expr_b - b from retrieved values
-                # compute formula for beaver multiplication
-
-
-# if expr is an addition operation
-# :
-# ...
-
-# if expr is a multiplication operation:
-#     ...
-
-# if expr is a secret:
-#     ...
-
-# if expr is a scalar:
-#     ...
-#
-# Call specialized methods for each expression type, and have these specialized
-# methods in turn call `process_expression` on their sub-expressions to process
-# further.
-pass
-
-# Feel free to add as many methods as you want.
+                return res
