@@ -10,6 +10,8 @@ from typing import (
     Set,
     Tuple,
 )
+from random import randint
+
 
 from communication import Communication
 from secret_sharing import(
@@ -25,8 +27,10 @@ class TrustedParamGenerator:
     A trusted third party that generates random values for the Beaver triplet multiplication scheme.
     """
 
+
     def __init__(self):
         self.participant_ids: Set[str] = set()
+        self.dict_castor: Dict = {}
 
 
     def add_participant(self, participant_id: str) -> None:
@@ -39,6 +43,23 @@ class TrustedParamGenerator:
         """
         Retrieve a triplet of shares for a given client_id.
         """
-        raise NotImplementedError("You need to implement this method.")
+        if op_id not in self.dict_castor.keys():
+            a,b,c = self.generate_beaver()
+            a_shares = share_secret(a,len(self.participant_ids))
+            b_shares = share_secret(b,len(self.participant_ids))
+            c_shares = share_secret(c,len(self.participant_ids))
+            for (idx,cid) in enumerate(self.participant_ids):
+                shares = []
+                shares.append(a_shares[idx])
+                shares.append(b_shares[idx])
+                shares.append(c_shares[idx])
+                self.dict_castor[op_id][cid] = shares
+        return self.dict_castor[op_id][client_id]
 
     # Feel free to add as many methods as you want.
+    def generate_beaver(self):
+        a = randint(1,1000)
+        b = randint(1,1000)
+        c = a*b
+        return (a,b,c)
+
