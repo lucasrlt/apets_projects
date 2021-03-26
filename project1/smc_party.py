@@ -146,17 +146,17 @@ class SMCParty:
             if isinstance(expr.a, Secret) and isinstance(expr.b, Secret):
                 return self.shares_dict[expr.a.id.decode()] + self.shares_dict[expr.b.id.decode()]
             # 2 cases for scala addition: scalar + expr_b or expr_a + scalar
-            # elif isinstance(expr.a, Scalar):
-            #     # by convention, only first client in participants list adds scalar
-            #     if (self.protocol_spec.participant_ids.index(self.client_id) == 0):
-            #         return Share(str(expr.a.value)) + self.process_expression(expr.b,ADD_SCALAR=True)
-            #     else:
-            #         return self.process_expression(expr.b)
-            # elif isinstance(expr.b, Scalar):
-            #     if (self.protocol_spec.participant_ids.index(self.client_id) == 0):
-            #         return self.process_expression(expr.a,ADD_SCALAR=True) + Share(str(expr.b.value))
-            #     else:
-            #         return self.process_expression(expr.a)
+            elif isinstance(expr.a, Scalar):
+                # by convention, only first client in participants list adds scalar
+                if (self.protocol_spec.participant_ids.index(self.client_id) == 0):
+                    return Share(str(expr.a.value)) + self.process_expression(expr.b,ADD_SCALAR=True)
+                else:
+                    return self.process_expression(expr.b)
+            elif isinstance(expr.b, Scalar):
+                if (self.protocol_spec.participant_ids.index(self.client_id) == 0):
+                    return self.process_expression(expr.a,ADD_SCALAR=True) + Share(str(expr.b.value))
+                else:
+                    return self.process_expression(expr.a)
             else:
                 expr_a = self.process_expression(expr.a)
                 expr_b = self.process_expression(expr.b)
