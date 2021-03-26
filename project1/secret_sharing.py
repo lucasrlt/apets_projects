@@ -31,7 +31,9 @@ def share_secret(secret: int, num_shares: int) -> List[Share]:
     shares = []
     for i in range(num_shares - 1):
         num_to_be_assigned = (num_shares-1) - i # -1 because a share can be 0
-        shares.append(randint(0, secret - sum(shares) - num_to_be_assigned))
+        share_bound = secret - sum(shares) - num_to_be_assigned
+        shares.append(randint(0, share_bound) if share_bound > 0 else 0)
+
     shares.append(secret - sum(shares))
     # shuffle shares list for randomness in shares assignment
 

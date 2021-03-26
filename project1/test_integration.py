@@ -203,25 +203,25 @@ def test_suite5():
     suite(parties, expr, expected)
 
 
-# def test_suite6():
-#     """
-#     f(a, b, c, d) = a + b + c + d
-#     """
-#     alice_secret = Secret()
-#     bob_secret = Secret()
-#     charlie_secret = Secret()
-#     david_secret = Secret()
-#
-#     parties = {
-#         "Alice": {alice_secret: 3},
-#         "Bob": {bob_secret: 14},
-#         "Charlie": {charlie_secret: 2},
-#         "David": {david_secret: 5}
-#     }
-#
-#     expr = (alice_secret + bob_secret + charlie_secret + david_secret)
-#     expected = 3 + 14 + 2 + 5
-#     suite(parties, expr, expected)
+def test_suite6():
+    """
+    f(a, b, c, d) = a + b + c + d
+    """
+    alice_secret = Secret()
+    bob_secret = Secret()
+    charlie_secret = Secret()
+    david_secret = Secret()
+
+    parties = {
+        "Alice": {alice_secret: 3},
+        "Bob": {bob_secret: 14},
+        "Charlie": {charlie_secret: 2},
+        "David": {david_secret: 5}
+    }
+
+    expr = (alice_secret + bob_secret + charlie_secret + david_secret)
+    expected = 3 + 14 + 2 + 5
+    suite(parties, expr, expected)
 
 
 # def test_suite7():
