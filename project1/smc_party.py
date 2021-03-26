@@ -19,7 +19,7 @@ from communication import Communication
 from expression import (
     Expression,
     Secret,
-    AddOp, SubOp
+    AddOp, SubOp, MultOp, Scalar
 )
 from protocol import ProtocolSpec
 from secret_sharing import(
@@ -154,23 +154,30 @@ class SMCParty:
 
         if isinstance(expr, AddOp):
             if isinstance(expr.a, Secret) and isinstance(expr.b, Secret):
-                res = self.add_secret(self.shares_dict[expr.a.id.decode()], self.shares_dict[expr.b.id.decode()])
-                return res
-            else:
+                return self.shares_dict[expr.a.id.decode()] + self.shares_dict[expr.b.id.decode()]
+            else: #TODO: add elif before this (below) general case -> to handle scalar case
                 expr_a = self.process_expression(expr.a)
                 expr_b = self.process_expression(expr.b)
-                return self.add_secret(expr_a, expr_b)
+                return expr_a + expr_b
         elif isinstance(expr, SubOp):
             if isinstance(expr.a, Secret) and isinstance(expr.b, Secret):
-                res = self.sub_secret(self.shares_dict[expr.a.id.decode()], self.shares_dict[expr.b.id.decode()])
-                return res
+                return self.shares_dict[expr.a.id.decode()] - self.shares_dict[expr.b.id.decode()]
             else:
                 expr_a = self.process_expression(expr.a)
                 expr_b = self.process_expression(expr.b)
-                return self.sub_secret(expr_a, expr_b)
+                return expr_a - expr_b
         elif isinstance(expr, Secret):
             return self.shares_dict[expr.id.decode()]
-        #elif isinstance(expr, Mu)
+        # elif isinstance(expr, MultOp):
+        #     if isinstance(expr.a, Scalar):
+        #         scalar = Share(str(expr.a.value))
+        #     elif isinstance(expr.b, Scalar):
+        #         scalar = Share(str(expr.b.value))
+        #     # by convention, only first client in participants list applies scalar
+        #     if (self.protocol_spec.participant_ids.index(self.client_id) == 0):
+        #         return  scalar*
+        #     else:
+        #         return self.process_expression(expr.b)
 
         # if expr is an addition operation
         # :

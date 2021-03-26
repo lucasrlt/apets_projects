@@ -17,22 +17,23 @@ class Share:
         return f"Share({self.value})"
 
     def __add__(self, other):
-        return int(self.value) + int(other.value)
+        return Share(str(int(self.value) + int(other.value)))
 
     def __sub__(self, other):
-        return int(self.value) - int(other.value)
+        return Share(str(int(self.value) - int(other.value)))
 
     def __mul__(self, other):
-        return int(self.value) * int(other.value)
+        return Share(str(int(self.value) * int(other.value)))
 
 
 def share_secret(secret: int, num_shares: int) -> List[Share]:
     """Generate secret shares."""
     shares = []
     for i in range(num_shares - 1):
-        num_already_assigned = (num_shares-1) - i # -1 because a share can be 0
-        shares.append(randint(0, secret - sum(shares) - num_already_assigned))
+        num_to_be_assigned = (num_shares-1) - i # -1 because a share can be 0
+        shares.append(randint(0, secret - sum(shares) - num_to_be_assigned))
     shares.append(secret - sum(shares))
+    # shuffle shares list for randomness in shares assignment
 
     return shares
 
