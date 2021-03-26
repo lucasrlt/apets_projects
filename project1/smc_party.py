@@ -157,7 +157,28 @@ class SMCParty:
             elif isinstance(expr.b, Scalar):
                 return self.process_expression(expr.a) * Share(str(expr.b.value))
             else:
-                pass
+                a_i, b_i, c_i = self.comm.retrieve_beaver_triplet_shares(expr.id.decode())
+                x_share = self.shares_dict[expr.a.id.decode()] - a_i
+                y_share = self.shares_dict[expr.b.id.decode()] - b_i
+
+                self.comm.publish_message("castor_x", str(x_share));
+                self.comm.publish_message("castor_y", str(y_share));
+
+                x_shares = [] 
+                y_shares = []
+                for sid in self.protocol_spec.participant_ids:
+                    x_shares.append(Share(self.comm.retrieve_public_message(sid, "castor_x").decode()))
+                    y_shares.append(Share(self.comm.retrieve_public_message(sid, "castor_y").decode()))
+
+                x = reconstruct_secret(x_shares)
+                y = reconstruct_secret(y_share)
+
+                res = c_i + int(self.shares_dict[expr.a.id.decode()].value) * y + int(self.shares_dict[expr.b.id.decode()].value) * x
+                if self.protocol_spec.participant_ids.index(self.client_id) == 0:
+                    res -= x * y
+
+
+                return Share(res)
                 # get beaver triplets a*b=c
                 # compute expr_a - a_share and expr_b - b_share and bdcast it
                 # reconstruct expr_a - a and expr_b - b from retrieved values
