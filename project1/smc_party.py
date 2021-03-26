@@ -22,11 +22,12 @@ from expression import (
     AddOp, SubOp, MultOp, Scalar
 )
 from protocol import ProtocolSpec
-from secret_sharing import(
+from secret_sharing import (
     reconstruct_secret,
     share_secret,
     Share,
 )
+
 
 # Feel free to add as many imports as you want.
 
@@ -51,18 +52,15 @@ class SMCParty:
             server_port: int,
             protocol_spec: ProtocolSpec,
             value_dict: Dict[Secret, int]
-        ):
+    ):
         self.comm = Communication(server_host, server_port, client_id)
 
         self.client_id = client_id
         self.protocol_spec = protocol_spec
         self.value_dict = value_dict
-        self.secret_ids_dict = {} # Associate secrets sharer with corresponding secrets IDs; ex: {"Alice":alice's secrets' IDs}
+        self.secret_ids_dict = {}  # Associate secrets sharer with corresponding secrets IDs; ex: {"Alice":alice's secrets' IDs}
         self.secret_ids = []
         self.shares_dict = {}
-
-        
-
 
     def run(self) -> int:
         """
@@ -79,7 +77,6 @@ class SMCParty:
 
         print("Secrets dict: ", self.secret_ids_dict)
 
-        
         # broadcast own secret's shares to clients
         for secret in self.value_dict.keys():
             shares = share_secret(self.value_dict[secret], len(self.protocol_spec.participant_ids))
@@ -90,7 +87,6 @@ class SMCParty:
         for sid in self.protocol_spec.participant_ids:
             for secret_id in self.secret_ids_dict[sid]:
                 self.shares_dict[secret_id] = Share(self.comm.retrieve_private_message(secret_id).decode())
-        
 
         print("Value dict: ", self.shares_dict)
 
@@ -112,21 +108,17 @@ class SMCParty:
             shares.append(Share(self.comm.retrieve_public_message(sid, "computed share").decode()))
         return reconstruct_secret(shares)
 
-
-    
     # def add_secret(self, a: Secret, b: Secret) -> Share:
     #     a_share, b_share = -1, -1
     #     num_participants = len(self.protocol_spec.participant_ids)
-        
+
     #     if a in self.value_dict.keys():
     #         a_shares = share_secret(self.value_dict[a], num_participants)
     #         for idx, sid in enumerate(self.protocol_spec.participant_ids):
     #             self.comm.send_private_message(sid, f"a_share", str(a_shares[idx]))
-            
+
     #     a_share = int(self.comm.retrieve_private_message(f"a_share").decode())
     #     print(f"{self.client_id} a:{a_share}")
-
-
 
     #     if b in self.value_dict.keys():
     #         b_shares = share_secret(self.value_dict[b], num_participants)
@@ -141,21 +133,31 @@ class SMCParty:
     def add_secret(self, a: Share, b: Share) -> Share:
         return Share(a + b)
 
-
     def sub_secret(self, a: Share, b: Share) -> Share:
         return Share(a - b)
-  
 
     # Suggestion: To process expressions, make use of the *visitor pattern* like so:
     def process_expression(
             self,
             expr: Expression
-        ) -> Share:
+    ) -> Share:
 
         if isinstance(expr, AddOp):
             if isinstance(expr.a, Secret) and isinstance(expr.b, Secret):
                 return self.shares_dict[expr.a.id.decode()] + self.shares_dict[expr.b.id.decode()]
-            else: #TODO: add elif before this (below) general case -> to handle scalar case
+            # # 2 cases for scala addition: scalar + expr_b or expr_a + scalar
+            # elif isinstance(expr.a, Scalar):
+            #     # by convention, only first client in participants list adds scalar
+            #     if (self.protocol_spec.participant_ids.index(self.client_id) == 0):
+            #         return Share(str(expr.a.value)) + self.process_expression(expr.b)
+            #     else:
+            #         return self.process_expression(expr.b)
+            # elif isinstance(expr.b, Scalar):
+            #     if (self.protocol_spec.participant_ids.index(self.client_id) == 0):
+            #         return Share(str(expr.b.value)) + self.process_expression(expr.a)
+            #     else:
+            #         return self.process_expression(expr.a)
+            else:
                 expr_a = self.process_expression(expr.a)
                 expr_b = self.process_expression(expr.b)
                 return expr_a + expr_b
@@ -168,33 +170,29 @@ class SMCParty:
                 return expr_a - expr_b
         elif isinstance(expr, Secret):
             return self.shares_dict[expr.id.decode()]
-        # elif isinstance(expr, MultOp):
-        #     if isinstance(expr.a, Scalar):
-        #         scalar = Share(str(expr.a.value))
-        #     elif isinstance(expr.b, Scalar):
-        #         scalar = Share(str(expr.b.value))
-        #     # by convention, only first client in participants list applies scalar
-        #     if (self.protocol_spec.participant_ids.index(self.client_id) == 0):
-        #         return  scalar*
-        #     else:
-        #         return self.process_expression(expr.b)
+        elif isinstance(expr, MultOp):
+            # 2 cases for scala multiplication: scalar * expr_b or expr_a * scalar
+            if isinstance(expr.a, Scalar):
+                return Share(str(expr.a.value)) * self.process_expression(expr.b)
+            elif isinstance(expr.b, Scalar):
+                return self.process_expression(expr.a) * Share(str(expr.b.value))
 
-        # if expr is an addition operation
-        # :
-            # ...
+# if expr is an addition operation
+# :
+# ...
 
-        # if expr is a multiplication operation:
-        #     ...
+# if expr is a multiplication operation:
+#     ...
 
-        # if expr is a secret:
-        #     ...
+# if expr is a secret:
+#     ...
 
-        # if expr is a scalar:
-        #     ...
-        #
-        # Call specialized methods for each expression type, and have these specialized
-        # methods in turn call `process_expression` on their sub-expressions to process
-        # further.
-        pass
+# if expr is a scalar:
+#     ...
+#
+# Call specialized methods for each expression type, and have these specialized
+# methods in turn call `process_expression` on their sub-expressions to process
+# further.
+pass
 
-    # Feel free to add as many methods as you want.
+# Feel free to add as many methods as you want.
