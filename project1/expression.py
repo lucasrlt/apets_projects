@@ -102,40 +102,31 @@ class Secret(Expression):
     # Feel free to add as many methods as you like.
 
 class AddOp(Expression):
-    def __init__(
-        self,
-        a: Expression,
-        b: Expression
-    ):
+    def __init__(self, a: Expression, b: Expression):
+        super().__init__()
         self.a = a
         self.b = b
 
     def __repr__(self): 
         return (
-            f"{repr(self.a)} + {repr(self.b)}"
+            f"({repr(self.a)} + {repr(self.b)})"
         )
 
 class SubOp(Expression):
-    def __init__(
-        self,
-        a: Expression,
-        b: Expression
-    ):
+    def __init__(self, a: Expression, b: Expression):
+        super().__init__()
         self.a = a
         self.b = b
 
     def __repr__(self): 
         return (
-            f"{repr(self.a)} - {repr(self.b)}"
+            f"({repr(self.a)} - {repr(self.b)})"
         )
 
 
 class MultOp(Expression):
-    def __init__(
-        self,
-        a: Expression,
-        b: Expression
-    ):
+    def __init__(self, a: Expression, b: Expression):
+        super().__init__()
         self.a = a
         self.b = b
 
