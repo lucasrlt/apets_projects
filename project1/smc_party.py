@@ -89,7 +89,7 @@ class SMCParty:
         # retrieve own share for each secret
         for sid in self.protocol_spec.participant_ids:
             for secret_id in self.secret_ids_dict[sid]:
-                self.shares_dict[secret_id] = Share(int(self.comm.retrieve_private_message(secret_id).decode()))
+                self.shares_dict[secret_id] = Share(self.comm.retrieve_private_message(secret_id).decode())
         
 
         print("Value dict: ", self.shares_dict)
@@ -109,7 +109,7 @@ class SMCParty:
         self.comm.publish_message("computed share", str(my_share.value))
         shares = []
         for sid in self.protocol_spec.participant_ids:
-            shares.append(Share(int(self.comm.retrieve_public_message(sid, "computed share").decode())))
+            shares.append(Share(self.comm.retrieve_public_message(sid, "computed share").decode()))
         return reconstruct_secret(shares)
 
 
@@ -170,6 +170,7 @@ class SMCParty:
                 return self.sub_secret(expr_a, expr_b)
         elif isinstance(expr, Secret):
             return self.shares_dict[expr.id.decode()]
+        #elif isinstance(expr, Mu)
 
         # if expr is an addition operation
         # :
