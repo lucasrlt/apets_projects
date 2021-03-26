@@ -156,6 +156,12 @@ class SMCParty:
                 return Share(str(expr.a.value)) * self.process_expression(expr.b)
             elif isinstance(expr.b, Scalar):
                 return self.process_expression(expr.a) * Share(str(expr.b.value))
+            else:
+                pass
+                # get beaver triplets a*b=c
+                # compute expr_a - a_share and expr_b - b_share and bdcast it
+                # reconstruct expr_a - a and expr_b - b from retrieved values
+                # compute formula for beaver multiplication
 
 
 # if expr is an addition operation
