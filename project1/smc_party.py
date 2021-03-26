@@ -79,7 +79,7 @@ class SMCParty:
         for secret in self.value_dict.keys():
             shares = share_secret(self.value_dict[secret], len(self.protocol_spec.participant_ids))
             for idx, sid in enumerate(self.protocol_spec.participant_ids):
-                self.comm.send_private_message(sid, secret.id.decode(), str(shares[idx]))
+                self.comm.send_private_message(sid, secret.id.decode(), shares[idx].value)
 
         # retrieve own share for each secret
         for sid in self.protocol_spec.participant_ids:
@@ -106,10 +106,10 @@ class SMCParty:
 
 
     def add_secret(self, a: Share, b: Share) -> Share:
-        return Share(a + b)
+        return a + b
 
     def sub_secret(self, a: Share, b: Share) -> Share:
-        return Share(a - b)
+        return a - b
 
     # Suggestion: To process expressions, make use of the *visitor pattern* like so:
     def process_expression(
@@ -173,7 +173,7 @@ class SMCParty:
                 x = reconstruct_secret(x_shares)
                 y = reconstruct_secret(y_share)
 
-                res = c_i + int(self.shares_dict[expr.a.id.decode()].value) * y + int(self.shares_dict[expr.b.id.decode()].value) * x
+                res = c_i + self.shares_dict[expr.a.id.decode()] * y + self.shares_dict[expr.b.id.decode()] * x
                 if self.protocol_spec.participant_ids.index(self.client_id) == 0:
                     res -= x * y
 

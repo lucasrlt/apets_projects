@@ -37,7 +37,7 @@ def share_secret(secret: int, num_shares: int) -> List[Share]:
     shares.append(secret - sum(shares))
     # shuffle shares list for randomness in shares assignment
 
-    return shares
+    return list(map(lambda x: Share(str(x)), shares))
 
 
 def reconstruct_secret(shares: List[Share]) -> int:

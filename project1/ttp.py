@@ -49,11 +49,13 @@ class TrustedParamGenerator:
             b_shares = share_secret(b,len(self.participant_ids))
             c_shares = share_secret(c,len(self.participant_ids))
             for (idx,cid) in enumerate(self.participant_ids):
-                shares = []
-                shares.append(a_shares[idx])
-                shares.append(b_shares[idx])
-                shares.append(c_shares[idx])
-                self.dict_castor[op_id][cid] = shares
+                # shares = []
+                # shares.append(a_shares[idx])
+                # shares.append(b_shares[idx])
+                # shares.append(c_shares[idx])
+                self.dict_castor[op_id][cid] = a_shares[idx], b_shares[idx], c_shares[idx]
+
+        print("Le retour", self.dict_castor[op_id][client_id])
         return self.dict_castor[op_id][client_id]
 
     # Feel free to add as many methods as you want.
@@ -61,5 +63,5 @@ class TrustedParamGenerator:
         a = randint(1,1000)
         b = randint(1,1000)
         c = a*b
-        return (a,b,c)
+        return a,b,c
 
