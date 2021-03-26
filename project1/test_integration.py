@@ -147,6 +147,24 @@ def test_suite3_bis():
     expected = 5 * (3 + 14 + 2)
     suite(parties, expr, expected)
 
+def test_suite3_bis_bis():
+    """
+    f(a, b, c) = (a + b + c) ∗ K_0 * K_1
+    """
+    alice_secret = Secret()
+    bob_secret = Secret()
+    charlie_secret = Secret()
+
+    parties = {
+        "Alice": {alice_secret: 3},
+        "Bob": {bob_secret: 14},
+        "Charlie": {charlie_secret: 2}
+    }
+
+    expr = ((alice_secret + bob_secret + charlie_secret) * Scalar(5) * Scalar(2))
+    expected = (3 + 14 + 2) * 5 * 2
+    suite(parties, expr, expected)
+
 # def test_suite4():
 #     """
 #     f(a, b, c) = (a + b + c) + K

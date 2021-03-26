@@ -139,22 +139,22 @@ class SMCParty:
     # Suggestion: To process expressions, make use of the *visitor pattern* like so:
     def process_expression(
             self,
-            expr: Expression
-    ) -> Share:
+            expr: Expression,
+            ADD_SCALAR=False) -> Share:
 
         if isinstance(expr, AddOp):
             if isinstance(expr.a, Secret) and isinstance(expr.b, Secret):
                 return self.shares_dict[expr.a.id.decode()] + self.shares_dict[expr.b.id.decode()]
-            # # 2 cases for scala addition: scalar + expr_b or expr_a + scalar
+            # 2 cases for scala addition: scalar + expr_b or expr_a + scalar
             # elif isinstance(expr.a, Scalar):
             #     # by convention, only first client in participants list adds scalar
             #     if (self.protocol_spec.participant_ids.index(self.client_id) == 0):
-            #         return Share(str(expr.a.value)) + self.process_expression(expr.b)
+            #         return Share(str(expr.a.value)) + self.process_expression(expr.b,ADD_SCALAR=True)
             #     else:
             #         return self.process_expression(expr.b)
             # elif isinstance(expr.b, Scalar):
             #     if (self.protocol_spec.participant_ids.index(self.client_id) == 0):
-            #         return Share(str(expr.b.value)) + self.process_expression(expr.a)
+            #         return self.process_expression(expr.a,ADD_SCALAR=True) + Share(str(expr.b.value))
             #     else:
             #         return self.process_expression(expr.a)
             else:
@@ -170,12 +170,18 @@ class SMCParty:
                 return expr_a - expr_b
         elif isinstance(expr, Secret):
             return self.shares_dict[expr.id.decode()]
+        elif isinstance(expr, Scalar):
+            if (ADD_SCALAR and self.protocol_spec.participant_ids.index(self.client_id) != 0):
+                return Share("0")
+            else:
+                return Share(str(expr.value))
         elif isinstance(expr, MultOp):
             # 2 cases for scala multiplication: scalar * expr_b or expr_a * scalar
             if isinstance(expr.a, Scalar):
                 return Share(str(expr.a.value)) * self.process_expression(expr.b)
             elif isinstance(expr.b, Scalar):
                 return self.process_expression(expr.a) * Share(str(expr.b.value))
+
 
 # if expr is an addition operation
 # :
