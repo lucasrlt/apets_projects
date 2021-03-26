@@ -57,7 +57,7 @@ class SMCParty:
         self.client_id = client_id
         self.protocol_spec = protocol_spec
         self.value_dict = value_dict
-        self.secret_ids_dict = {}
+        self.secret_ids_dict = {} # Associate secrets sharer with corresponding secrets IDs; ex: {"Alice":alice's secrets' IDs}
         self.secret_ids = []
         self.shares_dict = {}
 
@@ -139,11 +139,11 @@ class SMCParty:
     #     return Share(a_share + b_share)
 
     def add_secret(self, a: Share, b: Share) -> Share:
-        return Share(a.value + b.value)
+        return Share(a + b)
 
 
     def sub_secret(self, a: Share, b: Share) -> Share:
-        return Share(a.value - b.value)
+        return Share(a - b)
   
 
     # Suggestion: To process expressions, make use of the *visitor pattern* like so:

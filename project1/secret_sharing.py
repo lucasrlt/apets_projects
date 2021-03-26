@@ -17,13 +17,13 @@ class Share:
         return f"Share({self.value})"
 
     def __add__(self, other):
-        return self.value + other.value
+        return int(self.value) + int(other.value)
 
     def __sub__(self, other):
-        return self.value - other.value
+        return int(self.value) - int(other.value)
 
     def __mul__(self, other):
-        return self.value * other.value
+        return int(self.value) * int(other.value)
 
 
 def share_secret(secret: int, num_shares: int) -> List[Share]:
