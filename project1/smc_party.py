@@ -75,8 +75,6 @@ class SMCParty:
             for id in self.secret_ids_dict[sid]:
                 self.secret_ids.append(id)
 
-        print("Secrets dict: ", self.secret_ids_dict)
-
         # broadcast own secret's shares to clients
         for secret in self.value_dict.keys():
             shares = share_secret(self.value_dict[secret], len(self.protocol_spec.participant_ids))
@@ -87,8 +85,6 @@ class SMCParty:
         for sid in self.protocol_spec.participant_ids:
             for secret_id in self.secret_ids_dict[sid]:
                 self.shares_dict[secret_id] = Share(self.comm.retrieve_private_message(secret_id).decode())
-
-        print("Value dict: ", self.shares_dict)
 
         # for secret in self.value_dict.values():
         #     shares = share_secret(secret, len(self.protocol_spec.participant_ids))
@@ -108,27 +104,6 @@ class SMCParty:
             shares.append(Share(self.comm.retrieve_public_message(sid, "computed share").decode()))
         return reconstruct_secret(shares)
 
-    # def add_secret(self, a: Secret, b: Secret) -> Share:
-    #     a_share, b_share = -1, -1
-    #     num_participants = len(self.protocol_spec.participant_ids)
-
-    #     if a in self.value_dict.keys():
-    #         a_shares = share_secret(self.value_dict[a], num_participants)
-    #         for idx, sid in enumerate(self.protocol_spec.participant_ids):
-    #             self.comm.send_private_message(sid, f"a_share", str(a_shares[idx]))
-
-    #     a_share = int(self.comm.retrieve_private_message(f"a_share").decode())
-    #     print(f"{self.client_id} a:{a_share}")
-
-    #     if b in self.value_dict.keys():
-    #         b_shares = share_secret(self.value_dict[b], num_participants)
-    #         for idx, sid in enumerate(self.protocol_spec.participant_ids):
-    #             self.comm.send_private_message(sid, f"b_share", str(b_shares[idx]))
-
-    #     b_share = int(self.comm.retrieve_private_message(f"b_share").decode())
-    #     print(f"{self.client_id} b:{b_share}")
-
-    #     return Share(a_share + b_share)
 
     def add_secret(self, a: Share, b: Share) -> Share:
         return Share(a + b)
