@@ -86,15 +86,7 @@ class SMCParty:
             for secret_id in self.secret_ids_dict[sid]:
                 self.shares_dict[secret_id] = Share(self.comm.retrieve_private_message(secret_id).decode())
 
-        # for secret in self.value_dict.values():
-        #     shares = share_secret(secret, len(self.protocol_spec.participant_ids))
-        #     for idx, sid in enumerate(self.protocol_spec.participant_ids):
-        #         self.comm.send_private_message(sid, f"{self.client_id}_share", str(shares[idx]))
-
-        # for sid in self.protocol_spec.participant_ids:
-        #     my_share = self.comm.retrieve_private_message(f"{sid}_share")
-        #     self.shares_dict[sid] = int(my_share.decode())
-
+        # compute and broadcast self's result share
         expression = self.protocol_spec.expr
         my_share = self.process_expression(expression)
         self.comm.publish_message("computed share", str(my_share.value))
@@ -104,79 +96,86 @@ class SMCParty:
         return reconstruct_secret(shares)
 
 
-    def add_secret(self, a: Share, b: Share) -> Share:
-        return a + b
+    # Retrieve own's share of a given secret
+    def get_share(self, x: Secret):
+        return self.shares_dict[x.id.decode()]
 
-    def sub_secret(self, a: Share, b: Share) -> Share:
-        return a - b
+    # Get numerical index of self
+    def get_self_id(self) -> int:
+        return self.protocol_spec.participant_ids.index(self.client_id)
+
+    # Perform a + or - operation on shares 
+    def perform_operation(self, expr: Expression, a: Share, b: Share) -> Share:
+        if isinstance(expr, AddOp): 
+            return a + b
+        elif isinstance(expr, SubOp):
+            return a - b
+        elif isinstance(expr, MultOp):
+            return a * b
+
+    # Perform a multiplication between two secrets
+    def perform_secret_multiplication(self, expr: Expression, a: Share, b: Share):
+        # Compute beaver triplets
+        a_i, b_i, c_i = tuple(map(lambda x: Share(str(x)), self.comm.retrieve_beaver_triplet_shares(expr.id.decode())))
+        x_share = a - a_i
+        y_share = b - b_i
+
+        self.comm.publish_message("castor_x", str(x_share.value));
+        self.comm.publish_message("castor_y", str(y_share.value));
+
+        # Reconstruct [x - a] and [y - b]
+        x_shares = [] 
+        y_shares = []
+        for sid in self.protocol_spec.participant_ids:
+            x_shares.append(Share(self.comm.retrieve_public_message(sid, "castor_x").decode()))
+            y_shares.append(Share(self.comm.retrieve_public_message(sid, "castor_y").decode()))
+
+        x = Share(str(reconstruct_secret(x_shares)))
+        y = Share(str(reconstruct_secret(y_shares)))
+
+        # Compute share result
+        res = c_i + a * y + b * x
+        if self.get_self_id() == 0:
+            res -= x * y
+
+        return res
 
     # Suggestion: To process expressions, make use of the *visitor pattern* like so:
+    # ADD_SCALAR is a flag used to remember if we are adding a scalar
     def process_expression(
             self,
             expr: Expression,
             ADD_SCALAR=False) -> Share:
 
-        if isinstance(expr, AddOp):
-            if isinstance(expr.a, Secret) and isinstance(expr.b, Secret):
-                return self.shares_dict[expr.a.id.decode()] + self.shares_dict[expr.b.id.decode()]
-            # 2 cases for scala addition: scalar + expr_b or expr_a + scalar
-            elif isinstance(expr.a, Scalar):
-                # by convention, only first client in participants list adds scalar
-                if (self.protocol_spec.participant_ids.index(self.client_id) == 0):
-                    return Share(str(expr.a.value)) + self.process_expression(expr.b,ADD_SCALAR=True)
-                else:
-                    return self.process_expression(expr.b)
-            elif isinstance(expr.b, Scalar):
-                if (self.protocol_spec.participant_ids.index(self.client_id) == 0):
-                    return self.process_expression(expr.a,ADD_SCALAR=True) + Share(str(expr.b.value))
-                else:
-                    return self.process_expression(expr.a)
-            else:
-                expr_a = self.process_expression(expr.a)
-                expr_b = self.process_expression(expr.b)
-                return expr_a + expr_b
-        elif isinstance(expr, SubOp):
-            if isinstance(expr.a, Secret) and isinstance(expr.b, Secret):
-                return self.shares_dict[expr.a.id.decode()] - self.shares_dict[expr.b.id.decode()]
-            else:
-                expr_a = self.process_expression(expr.a)
-                expr_b = self.process_expression(expr.b)
-                return expr_a - expr_b
-        elif isinstance(expr, Secret):
-            return self.shares_dict[expr.id.decode()]
+        if isinstance(expr, Secret):
+            return self.get_share(expr)
+
+        # Only one party uses the actual value of a scalar, others get 0 
         elif isinstance(expr, Scalar):
-            if (ADD_SCALAR and self.protocol_spec.participant_ids.index(self.client_id) != 0):
-                return Share("0")
-            else:
-                return Share(str(expr.value))
-        elif isinstance(expr, MultOp):
-            # 2 cases for scala multiplication: scalar * expr_b or expr_a * scalar
-            if isinstance(expr.a, Scalar):
-                return Share(str(expr.a.value)) * self.process_expression(expr.b)
-            elif isinstance(expr.b, Scalar):
-                return self.process_expression(expr.a) * Share(str(expr.b.value))
-            else:
+            return Share(str(0 if (ADD_SCALAR and self.get_self_id() != 0) else expr.value))
+
+        # Perform an operation on a scalar
+        elif isinstance(expr.a, Scalar) or isinstance(expr.b, Scalar):
+            scalar = expr.a if isinstance(expr.a, Scalar) else expr.b
+            secret = expr.b if isinstance(expr.a, Scalar) else expr.a
+
+            if isinstance(expr, MultOp): # directly perform scalar multiplication
+                return self.perform_operation(expr, Share(scalar.value), self.process_expression(secret))
+            else: # perform scalar addition, if expr is a substraction just negate the scalar
+                if self.get_self_id() == 0:
+                    return self.perform_operation(AddOp(scalar, secret), Share(scalar.value if isinstance(expr, AddOp) else -scalar.value), self.process_expression(secret, ADD_SCALAR=True))
+                else:
+                    return self.process_expression(secret)
+
+        # Perform an operation between 2 secrets
+        elif (isinstance(expr.a, Secret) and isinstance(expr.b, Secret)) or isinstance(expr, MultOp):
+            if isinstance(expr, MultOp):
                 expr_a = self.process_expression(expr.a)
                 expr_b = self.process_expression(expr.b)
+                return self.perform_secret_multiplication(expr, expr_a, expr_b)
+            else:
+                return self.perform_operation(expr, self.get_share(expr.a), self.get_share(expr.b))
 
-                a_i, b_i, c_i = tuple(map(lambda x: Share(str(x)), self.comm.retrieve_beaver_triplet_shares(expr.id.decode())))
-                x_share = expr_a - a_i
-                y_share = expr_b - b_i
-
-                self.comm.publish_message("castor_x", str(x_share.value));
-                self.comm.publish_message("castor_y", str(y_share.value));
-
-                x_shares = [] 
-                y_shares = []
-                for sid in self.protocol_spec.participant_ids:
-                    x_shares.append(Share(self.comm.retrieve_public_message(sid, "castor_x").decode()))
-                    y_shares.append(Share(self.comm.retrieve_public_message(sid, "castor_y").decode()))
-
-                x = Share(str(reconstruct_secret(x_shares)))
-                y = Share(str(reconstruct_secret(y_shares)))
-
-                res = c_i + expr_a * y + expr_b * x
-                if self.protocol_spec.participant_ids.index(self.client_id) == 0:
-                    res -= x * y
-
-                return res
+        # Directly perform the operation on the share results
+        else:
+            return self.perform_operation(expr, self.process_expression(expr.a), self.process_expression(expr.b))

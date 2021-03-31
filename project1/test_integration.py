@@ -179,8 +179,10 @@ def test_suite4():
         "Charlie": {charlie_secret: 2}
     }
 
-    expr = ((alice_secret + bob_secret + charlie_secret) + Scalar(5))
-    expected = (3 + 14 + 2) + 5
+    expr = alice_secret + Scalar(5)
+    # expr = ((alice_secret + bob_secret + charlie_secret) + Scalar(5))
+    # expected = (3 + 14 + 2) + 5
+    expected = 3 + 5
     suite(parties, expr, expected)
 
 
@@ -315,6 +317,28 @@ def test_suite11():
         "C": { c_secret: -3 }
     }
 
-    expr = alice_secret + bob_secret * c_secret
-    expected = -4 + 12 * -3
+    expr = alice_secret + bob_secret * c_secret - Scalar(5)
+    expected = -4 + 12 * -3 - 5
+    suite(parties, expr, expected)
+
+
+def test_suite12():
+    alice_secret1 = Secret()
+    alice_secret2 = Secret()
+    alice_secret3 = Secret()
+
+    bob_secret = Secret()
+    c_secret = Secret()
+
+    parties = {
+        "Alice": {
+            alice_secret1: 4,
+            alice_secret2: -3,
+        },
+        "Bob": { bob_secret: 9 },
+        "C": { c_secret: 12}
+    }
+
+    expr = alice_secret1 * alice_secret2 + bob_secret + c_secret
+    expected = 4 * -3 + 9 + 12
     suite(parties, expr, expected)
