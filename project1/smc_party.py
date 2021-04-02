@@ -136,7 +136,7 @@ class SMCParty:
         reconstructed = reconstruct_secret(shares)
 
         end = time.time()
-        if self.performance_evaluation is not None:
+        if self.performance_evaluation:
             return (reconstructed, end - start, self.bytes_in, self.bytes_out)
         else:
             return reconstructed

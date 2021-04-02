@@ -23,13 +23,44 @@ from smc_party import SMCParty
 
 sys.setrecursionlimit(5000)
 
+### Make a plot of the given csv file
 def make_plot(title, csv_file):
     df = pd.read_csv(csv_file)
-    df.plot(x=0, subplots=True, xlabel=title, logy=True)
+    df_stat = pd.DataFrame(columns=["Computation Time (in seconds)", "Bytes In", "Bytes Out"])
+    
+    df = df.set_index("Unnamed: 0")
+    fig, axs = plt.subplots(4, sharex=True)
+    axs[1].plot(df["Computation Time (in seconds)"], 'tab:orange', label="Computation Time (in seconds)")
+    axs[2].plot(df["Bytes In"], 'tab:green', label="Bytes In")
+    axs[2].legend()
+    axs[3].plot(df["Bytes Out"], 'tab:red', label="Bytes Out")
+    axs[3].legend()
+    axs[1].legend()
+    axs[3].set_xlabel(title)
+
+    df_stat = df_stat.append(pd.Series(df.mean(), name="Mean"))
+    df_stat = df_stat.append(pd.Series(df.std(), name="Standard deviation"))
+    df_stat = df_stat.round(2)
+
+    values = ["Mean", "Standard deviation"]
+    cell_text = []
+    for row in range(len(df_stat)):
+        txt = list(df_stat.iloc[row][:-1])
+        txt.insert(0, values[row])
+        cell_text.append(txt)
+
+    # statistics table
+    t = axs[0].table(cellText=cell_text, colLabels=["", "Computation Time", "Bytes In", "Bytes Out"], loc="center")
+    axs[0].axis("off")
+    t.auto_set_font_size(False)
+    t.set_fontsize(8)
+    t.scale(1, 1.2)
+
     plt.savefig("perf_eval/" + title + ".png")
-    # plt.show()
+    
     plt.close()
 
+## Class handling the performance evaluation for one test suite
 class PerformanceEvaluator:
   def __init__(self, title=""):
     self.df = pd.DataFrame(columns=["Computation Time (in seconds)", "Bytes In", "Bytes Out"])
@@ -38,11 +69,13 @@ class PerformanceEvaluator:
     self.bytes_out = []
     self.title = title
 
+  # Adds the given evaluation results to the list of parties' results 
   def performance_eval_callback(self, client_id, computation_time, bytes_in, bytes_out):
     self.computation_times.append(computation_time)
     self.bytes_in.append(bytes_in)
     self.bytes_out.append(bytes_out)
 
+  # Reset the evaluation for one parameter
   def complete_results(self, id):
     self.df = self.df.append(pd.Series({
       "Computation Time (in seconds)": mean(list(self.computation_times)), 
@@ -123,7 +156,7 @@ def suite(parties, expr, expected, performance_evaluator):
 
 def test_number_additions(perf):
     """
-    f(a) = a + a + ... + a
+    f(a) = a + b + ... + a + b
     """
     
     num_ops = [10, 100, 500, 1000, 2000, 4000]
@@ -131,12 +164,14 @@ def test_number_additions(perf):
     for num_op in num_ops:
       print("----- Performance evaluation for number of additions " + str(num_op))
       secret = Secret()
+      secret2 = Secret()
       parties = {}
       expr = secret
       parties["Alice"] = { secret: 5 }
+      parties["Bob"] = { secret2: 3 }
 
       for i in range(num_op):
-        expr = expr + secret
+        expr = expr + (secret if i % 2 == 0 else secret2)
 
       suite(parties, expr, 0, perf)
       perf.complete_results(num_op)
@@ -145,17 +180,19 @@ def test_number_additions(perf):
 
 def test_number_additions_scalar(perf):
     """
-    f(a) = a + K0 + ... + K0
+    f(a) = a + b + K0 + ... + K0
     """
     
     num_ops = [10, 100, 500, 1000, 2000, 4000]
 
     for num_op in num_ops:
-      print("----- Performance evaluation for number of additions " + str(num_op))
+      print("----- Performance evaluation for number of scalar additions " + str(num_op))
       secret = Secret()
+      secret2 = Secret()
       parties = {}
-      expr = secret
+      expr = secret + secret2
       parties["Alice"] = { secret: 5 }
+      parties["Bob"] = { secret2: 4 }
 
       for i in range(num_op):
         expr = expr + Scalar(5)
@@ -167,20 +204,22 @@ def test_number_additions_scalar(perf):
 
 def test_number_multiplications(perf):
     """
-    f(a) = a * a * ... * a
+    f(a) = a * b * ... * a * b
     """
     
     num_ops = [10, 100, 500, 1000, 2000, 4000]
 
     for num_op in num_ops:
-      print("----- Performance evaluation for number of additions " + str(num_op))
+      print("----- Performance evaluation for number of multiplications " + str(num_op))
       secret = Secret()
+      secret2 = Secret()
       parties = {}
       expr = secret
       parties["Alice"] = { secret: 2 }
+      parties["Bob"] = { secret2: 2 }
 
       for i in range(num_op):
-        expr = expr * secret
+        expr = expr * (secret if i % 2 == 0 else secret2)
 
       suite(parties, expr, 0, perf)
       perf.complete_results(num_op)
@@ -189,17 +228,19 @@ def test_number_multiplications(perf):
 
 def test_number_scalar_multiplications(perf):
     """
-    f(a) = a * K * ... * K
+    f(a) = a * b * K * ... * K
     """
     
     num_ops = [10, 100, 500, 1000, 2000, 4000]
 
     for num_op in num_ops:
-      print("----- Performance evaluation for number of additions " + str(num_op))
+      print("----- Performance evaluation for number of scalar multiplications " + str(num_op))
       secret = Secret()
+      secret2 = Secret()
       parties = {}
-      expr = secret
+      expr = secret * secret2
       parties["Alice"] = { secret: 2 }
+      parties["Bob"] = { secret2: 2 }
 
       for i in range(num_op):
         expr = expr * Scalar(2)
@@ -218,7 +259,7 @@ def test_number_parties(perf):
   num_ops = 1000
   secrets = [Secret() for _ in range(num_ops)]
 
-  num_parties = [1, 10, 25, 50, 100, 200, 300]
+  num_parties = [1, 10, 25, 50, 75, 100, 125, 150]
 
   expr = secrets[0]
   for i in range(1, num_ops):
@@ -237,9 +278,7 @@ def test_number_parties(perf):
         parties[idx] = {}
       parties[idx][secrets[secret_count]] = 5
       secret_count += 1
-      # print(secret_count, secrets_per_parties, int(secret_count / secrets_per_parties))
 
-    # print(parties)
     suite(parties, expr, 0, perf)
     perf.complete_results(num_party)
 
@@ -249,11 +288,14 @@ def test_number_parties(perf):
 
 
 
-test_number_additions(PerformanceEvaluator("Number of additions"))
-test_number_additions_scalar(PerformanceEvaluator("Number of scalar additions"))
-test_number_multiplications(PerformanceEvaluator("Number of multiplications"))
-test_number_scalar_multiplications(PerformanceEvaluator("Number of scalar multiplications"))
-test_number_parties(PerformanceEvaluator("Number of parties"))
-# make_plot("Number of", "perf_eval/Number of.csv")
-
+# test_number_additions(PerformanceEvaluator("Number of additions"))
+# test_number_additions_scalar(PerformanceEvaluator("Number of scalar additions"))
+# test_number_multiplications(PerformanceEvaluator("Number of multiplications"))
+# test_number_scalar_multiplications(PerformanceEvaluator("Number of scalar multiplications"))
+# test_number_parties(PerformanceEvaluator("Number of parties"))
+make_plot("Number of parties", "perf_eval/Number of parties.csv")
+make_plot("Number of additions", "perf_eval/Number of additions.csv")
+make_plot("Number of scalar additions", "perf_eval/Number of scalar additions.csv")
+make_plot("Number of multiplications", "perf_eval/Number of multiplications.csv")
+make_plot("Number of scalar multiplications", "perf_eval/Number of scalar multiplications.csv")
 
