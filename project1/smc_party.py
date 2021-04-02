@@ -5,8 +5,10 @@ MODIFY THIS FILE.
 """
 # You might want to import more classes if needed.
 
+import sys
 import collections
 import json
+import time
 from server import publish_message, retrieve_private_message, send_private_message
 from typing import (
     Dict,
@@ -51,7 +53,8 @@ class SMCParty:
             server_host: str,
             server_port: int,
             protocol_spec: ProtocolSpec,
-            value_dict: Dict[Secret, int]
+            value_dict: Dict[Secret, int],
+            performance_evaluation: bool = False
     ):
         self.comm = Communication(server_host, server_port, client_id)
 
@@ -61,17 +64,53 @@ class SMCParty:
         self.secret_ids_dict = {}  # Associate secrets sharer with corresponding secrets IDs; ex: {"Alice":alice's secrets' IDs}
         self.secret_ids = []
         self.shares_dict = {}
+        self.performance_evaluation = performance_evaluation
+
+        self.bytes_in = 0
+        self.bytes_out = 0
+
+
+    ### OVERRRIDES
+    # Every communication function is overriden to help for performance evaluation
+    def publish_message(self, label: str, msg: str):
+        self.bytes_out += len(msg.encode())
+        self.comm.publish_message(label, msg)
+
+    def send_private_message(self, receiver, label: str, msg: str):
+        self.bytes_out += len(msg.encode())
+        self.comm.send_private_message(receiver, label, msg)
+
+    def retrieve_public_message(self, sender_id: str, label: str) -> str:
+        res = self.comm.retrieve_public_message(sender_id, label)
+        self.bytes_in += len(res)
+        return res.decode()
+
+    def retrieve_private_message(self, label: str) -> str:
+        res = self.comm.retrieve_private_message(label)
+        self.bytes_in += len(res)
+        return res.decode()
+
+    def retrieve_beaver_triplet_shares(self, id: str):
+        res = self.comm.retrieve_beaver_triplet_shares(id)
+        for x in res:
+            print("Adding this", sys.getsizeof(x))
+            self.bytes_in += sys.getsizeof(x)
+        return res
+
+    ### \OVERRIDES
 
     def run(self) -> int:
         """
         The method the client use to do the SMC.
         """
 
+        start = time.time()
+
         # broadcast and get secrets ids from clients
-        self.comm.publish_message(f"client_secrets_id", ",".join([x.id.decode() for x in self.value_dict.keys()]))
+        self.publish_message(f"client_secrets_id", ",".join([x.id.decode() for x in self.value_dict.keys()]))
 
         for sid in self.protocol_spec.participant_ids:
-            self.secret_ids_dict[sid] = self.comm.retrieve_public_message(sid, "client_secrets_id").decode().split(",")
+            self.secret_ids_dict[sid] = self.retrieve_public_message(sid, "client_secrets_id").split(",")
             for id in self.secret_ids_dict[sid]:
                 self.secret_ids.append(id)
 
@@ -79,21 +118,28 @@ class SMCParty:
         for secret in self.value_dict.keys():
             shares = share_secret(self.value_dict[secret], len(self.protocol_spec.participant_ids))
             for idx, sid in enumerate(self.protocol_spec.participant_ids):
-                self.comm.send_private_message(sid, secret.id.decode(), shares[idx].value)
+                self.send_private_message(sid, secret.id.decode(), shares[idx].value)
 
         # retrieve own share for each secret
         for sid in self.protocol_spec.participant_ids:
             for secret_id in self.secret_ids_dict[sid]:
-                self.shares_dict[secret_id] = Share(self.comm.retrieve_private_message(secret_id).decode())
+                self.shares_dict[secret_id] = Share(self.retrieve_private_message(secret_id))
 
         # compute and broadcast self's result share
         expression = self.protocol_spec.expr
         my_share = self.process_expression(expression)
-        self.comm.publish_message("computed share", str(my_share.value))
+        self.publish_message("computed share", str(my_share.value))
         shares = []
         for sid in self.protocol_spec.participant_ids:
-            shares.append(Share(self.comm.retrieve_public_message(sid, "computed share").decode()))
-        return reconstruct_secret(shares)
+            shares.append(Share(self.retrieve_public_message(sid, "computed share")))
+
+        reconstructed = reconstruct_secret(shares)
+
+        end = time.time()
+        if self.performance_evaluation is not None:
+            return (reconstructed, end - start, self.bytes_in, self.bytes_out)
+        else:
+            return reconstructed
 
 
     # Retrieve own's share of a given secret
@@ -116,19 +162,19 @@ class SMCParty:
     # Perform a multiplication between two secrets
     def perform_secret_multiplication(self, expr: Expression, a: Share, b: Share):
         # Compute beaver triplets
-        a_i, b_i, c_i = tuple(map(lambda x: Share(str(x)), self.comm.retrieve_beaver_triplet_shares(expr.id.decode())))
+        a_i, b_i, c_i = tuple(map(lambda x: Share(str(x)), self.retrieve_beaver_triplet_shares(expr.id.decode())))
         x_share = a - a_i
         y_share = b - b_i
 
-        self.comm.publish_message("castor_x", str(x_share.value));
-        self.comm.publish_message("castor_y", str(y_share.value));
+        self.publish_message("castor_x", str(x_share.value));
+        self.publish_message("castor_y", str(y_share.value));
 
         # Reconstruct [x - a] and [y - b]
         x_shares = [] 
         y_shares = []
         for sid in self.protocol_spec.participant_ids:
-            x_shares.append(Share(self.comm.retrieve_public_message(sid, "castor_x").decode()))
-            y_shares.append(Share(self.comm.retrieve_public_message(sid, "castor_y").decode()))
+            x_shares.append(Share(self.retrieve_public_message(sid, "castor_x")))
+            y_shares.append(Share(self.retrieve_public_message(sid, "castor_y")))
 
         x = Share(str(reconstruct_secret(x_shares)))
         y = Share(str(reconstruct_secret(y_shares)))
