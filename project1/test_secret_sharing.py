@@ -4,8 +4,3 @@ Testing secret sharing is not obligatory.
 
 MODIFY THIS FILE.
 """
-
-
-def test():
-    pass
-    # raise NotImplementedError("You can create some tests.")

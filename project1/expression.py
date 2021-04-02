@@ -40,13 +40,8 @@ class Expression:
     def __add__(self, other):
         return AddOp(self, other)
 
-        # raise NotImplementedError("You need to implement this method.")
-
-
     def __sub__(self, other):
         return SubOp(self, other)
-        # raise NotImplementedError("You need to implement this method.")
-
 
     def __mul__(self, other):
         return MultOp(self, other)        

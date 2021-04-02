@@ -54,7 +54,6 @@ class TrustedParamGenerator:
                 self.dict_castor[op_id][cid] = (a_shares[idx], b_shares[idx], c_shares[idx])
 
         return self.dict_castor[op_id][client_id]
-        # print("Le retour", self.dict_castor[op_id][client_id])
 
     # Feel free to add as many methods as you want.
     def generate_beaver(self):
