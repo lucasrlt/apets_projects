@@ -16,11 +16,13 @@ the functions provided to resemble a more object-oriented interface.
 """
 
 from typing import Any, List, Tuple
-from petrelic.multiplicative.pairing import G1, G2, GT
+# from petrelic.multiplicative.pairing import G1, G2, GT
 from random import randint
 
 from serialization import jsonpickle
+from petrelic.bn import Bn
 from petrelic.multiplicative.pairing import G1, G2, GT
+from binascii import hexlify
 
 # Type hint aliases
 # Feel free to change them as you see fit.
@@ -86,13 +88,18 @@ def sign(
     """ Sign the vector of messages `msgs` """
     h = G1.generator() # note: should be G1*
 
-    exponents = {}
+    exponent = sk[0]
     for idx, msg in enumerate(msgs):
-        exponents.append([2 + idx] * G1.hash_to_point(msg))
-    signature = (h, h ** (sk[0] + G1.sum(exponents)))
+        exponent += sk[2 + idx] * Bn.from_binary(msg).mod(G1.order())
+    signature = (h, h ** (exponent))
 
     return signature
 
+
+def test():
+    msgs = [b"hello", b"coucou"]
+    sk, pk = generate_key(msgs)
+    print(sign(sk, msgs))
 
 def verify(
         pk: PublicKey,
