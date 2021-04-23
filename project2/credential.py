@@ -18,12 +18,12 @@ the functions provided to resemble a more object-oriented interface.
 from typing import Any, List, Tuple
 
 from serialization import jsonpickle
-
+from petrelic.multiplicative.pairing import G1, G2, GT
 
 # Type hint aliases
 # Feel free to change them as you see fit.
 # Maybe at the end, you will not need aliases at all!
-SecretKey = Any
+SecretKey = Any # a tuple (x, X, y1, ..., yL)
 PublicKey = Any
 Signature = Any
 Attribute = Any
@@ -51,7 +51,14 @@ def sign(
         msgs: List[bytes]
     ) -> Signature:
     """ Sign the vector of messages `msgs` """
-    raise NotImplementedError()
+    h = G1.generator() # note: should be G1*
+
+    exponents = {}
+    for idx, msg in enumerate(msgs):
+        exponents.append([2 + idx] * G1.hash_to_point(msg))
+    signature = (h, h ** (sk[0] + G1.sum(exponents)))
+
+    return signature
 
 
 def verify(
