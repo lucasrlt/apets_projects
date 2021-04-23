@@ -27,7 +27,7 @@ from binascii import hexlify
 # Type hint aliases
 # Feel free to change them as you see fit.
 # Maybe at the end, you will not need aliases at all!
-SecretKey = Any # a tuple (x, X, y1, ..., yL)
+SecretKey = Any  # a tuple (x, X, y1, ..., yL)
 PublicKey = Any
 Signature = Any
 Attribute = Any
@@ -45,7 +45,7 @@ DisclosureProof = Any
 
 def generate_key(
         attributes: List[Attribute]
-    ) -> Tuple[SecretKey, PublicKey]:
+) -> Tuple[SecretKey, PublicKey]:
     """ Generate signer key pair """
     L = len(attributes)
     p = G1.order()
@@ -55,38 +55,38 @@ def generate_key(
         ys[i] = p.random()
     g1 = G1.generator()
     g2 = G2.generator()
-    X1 = g1**x
-    X2 = g2**x
+    X1 = g1 ** x
+    X2 = g2 ** x
     Y1s = [0 for _ in range(L)]
     Y2s = [0 for _ in range(L)]
     for i in range(L):
-        Y1s[i] = g1**ys[i]
-        Y2s[i] = g2**ys[i]
+        Y1s[i] = g1 ** ys[i]
+        Y2s[i] = g2 ** ys[i]
 
-    sk_list = [0 for _ in range(L+2)]
+    sk_list = [0 for _ in range(L + 2)]
     sk_list[0] = x
     sk_list[1] = X1
     for i in range(L):
-        sk_list[i+2] = ys[i]
+        sk_list[i + 2] = ys[i]
     sk: SecretKey = tuple(sk_list)
-    pk_list = [0 for _ in range(2*L+2)]
+    pk_list = [0 for _ in range(2 * L + 2)]
     pk_list[0] = g1
-    pk_list[L+1] = g2
-    pk_list[L+2] = X2
+    pk_list[L + 1] = g2
+    pk_list[L + 2] = X2
     for i in range(L):
-        pk_list[i+1] = Y1s[i]
-        pk_list[i+L+2] = Y2s[i]
+        pk_list[i + 1] = Y1s[i]
+        pk_list[i + L + 2] = Y2s[i]
     pk: PublicKey = tuple(pk_list)
-    return (sk,pk)
-    #raise NotImplementedError()
+    return (sk, pk)
+    # raise NotImplementedError()
 
 
 def sign(
         sk: SecretKey,
         msgs: List[bytes]
-    ) -> Signature:
+) -> Signature:
     """ Sign the vector of messages `msgs` """
-    h = G1.generator() # note: should be G1*
+    h = G1.generator()  # note: should be G1*
 
     exponent = sk[0]
     for idx, msg in enumerate(msgs):
@@ -105,9 +105,14 @@ def verify(
         pk: PublicKey,
         signature: Signature,
         msgs: List[bytes]
-    ) -> bool:
+) -> bool:
     """ Verify the signature on a vector of messages """
-    raise NotImplementedError()
+    X1 = pk[len(msgs)+2]
+    product = 1
+    for i in range(len(msgs)):
+        product *= pk[i+1]**G1.hash_to_point(msgs[i])
+    return signature[0] != pk[0].neutral_element() \
+    and signature[0].pair(X1*product) == signature[1].pair(pk[len(msgs) + 1])
 
 
 #################################
@@ -119,7 +124,7 @@ def verify(
 def create_issue_request(
         pk: PublicKey,
         user_attributes: AttributeMap
-    ) -> IssueRequest:
+) -> IssueRequest:
     """ Create an issuance request
 
     This corresponds to the "user commitment" step in the issuance protocol.
@@ -134,7 +139,7 @@ def sign_issue_request(
         pk: PublicKey,
         request: IssueRequest,
         issuer_attributes: AttributeMap
-    ) -> BlindSignature:
+) -> BlindSignature:
     """ Create a signature corresponding to the user's request
 
     This corresponds to the "Issuer signing" step in the issuance protocol.
@@ -145,7 +150,7 @@ def sign_issue_request(
 def obtain_credential(
         pk: PublicKey,
         response: BlindSignature
-    ) -> AnonymousCredential:
+) -> AnonymousCredential:
     """ Derive a credential from the issuer's response
 
     This corresponds to the "Unblinding signature" step.
@@ -160,7 +165,7 @@ def create_disclosure_proof(
         credential: AnonymousCredential,
         hidden_attributes: List[Attribute],
         message: bytes
-    ) -> DisclosureProof:
+) -> DisclosureProof:
     """ Create a disclosure proof """
     raise NotImplementedError()
 
@@ -169,7 +174,7 @@ def verify_disclosure_proof(
         pk: PublicKey,
         disclosure_proof: DisclosureProof,
         message: bytes
-    ) -> bool:
+) -> bool:
     """ Verify the disclosure proof
 
     Hint: The verifier may also want to retrieve the disclosed attributes
