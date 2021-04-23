@@ -16,6 +16,8 @@ the functions provided to resemble a more object-oriented interface.
 """
 
 from typing import Any, List, Tuple
+from petrelic.multiplicative.pairing import G1, G2, GT
+from random import randint
 
 from serialization import jsonpickle
 from petrelic.multiplicative.pairing import G1, G2, GT
@@ -43,7 +45,38 @@ def generate_key(
         attributes: List[Attribute]
     ) -> Tuple[SecretKey, PublicKey]:
     """ Generate signer key pair """
-    raise NotImplementedError()
+    L = len(attributes)
+    p = G1.order()
+    x = p.random()
+    ys = [0 for _ in range(L)]
+    for i in range(L):
+        ys[i] = p.random()
+    g1 = G1.generator()
+    g2 = G2.generator()
+    X1 = g1**x
+    X2 = g2**x
+    Y1s = [0 for _ in range(L)]
+    Y2s = [0 for _ in range(L)]
+    for i in range(L):
+        Y1s[i] = g1**ys[i]
+        Y2s[i] = g2**ys[i]
+
+    sk_list = [0 for _ in range(L+2)]
+    sk_list[0] = x
+    sk_list[1] = X1
+    for i in range(L):
+        sk_list[i+2] = ys[i]
+    sk: SecretKey = tuple(sk_list)
+    pk_list = [0 for _ in range(2*L+2)]
+    pk_list[0] = g1
+    pk_list[L+1] = g2
+    pk_list[L+2] = X2
+    for i in range(L):
+        pk_list[i+1] = Y1s[i]
+        pk_list[i+L+2] = Y2s[i]
+    pk: PublicKey = tuple(pk_list)
+    return (sk,pk)
+    #raise NotImplementedError()
 
 
 def sign(
