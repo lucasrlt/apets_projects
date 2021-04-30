@@ -29,7 +29,7 @@ SecretKey = Any  # a tuple (x, X, y1, ..., yL)
 PublicKey = Any
 Signature = Any
 Attribute = Any
-AttributeMap = Any
+AttributeMap = {int, int}
 IssueRequest = Any
 BlindSignature = Any
 AnonymousCredential = Any
@@ -88,7 +88,7 @@ def sign(
 
     exponents = {}
     for idx, msg in enumerate(msgs):
-        exponents.append([2 + idx] * G1.hash_to_point(msg))
+        exponents.append([2 + idx] * int.from_bytes(msg,'big'))
     signature = (h, h ** (sk[0] + G1.sum(exponents)))
 
     return signature
@@ -103,7 +103,7 @@ def verify(
     X1 = pk[len(msgs)+2]
     product = 1
     for i in range(len(msgs)):
-        product *= pk[i+1]**G1.hash_to_point(msgs[i])
+        product *= pk[i+1]**int.from_bytes(msgs[i],'big')
     return signature[0] != pk[0].neutral_element() \
     and signature[0].pair(X1*product) == signature[1].pair(pk[len(msgs) + 1])
 
