@@ -15,28 +15,43 @@ resembles the original scheme definition. However, you are free to restructure
 the functions provided to resemble a more object-oriented interface.
 """
 
+from re import M
 from typing import Any, List, Tuple
 # from petrelic.multiplicative.pairing import G1, G2, GT
 from random import randint
 
 from serialization import jsonpickle
 from petrelic.bn import Bn
-from petrelic.multiplicative.pairing import G1, G2, GT
+from petrelic.multiplicative.pairing import G1, G1Element, G2, G2Element, GT
 from binascii import hexlify
 
 # Type hint aliases
 # Feel free to change them as you see fit.
 # Maybe at the end, you will not need aliases at all!
-SecretKey = Any  # a tuple (x, X, y1, ..., yL)
-PublicKey = Any
+# SecretKey = Any  # a tuple (x, X, y1, ..., yL)
+# PublicKey = Any
 Signature = Any
-Attribute = Any
-AttributeMap = Any
-IssueRequest = Any
-BlindSignature = Any
+Attribute = bytes
+AttributeMap = {int, Attribute}
+IssueRequest = G1Element
+BlindSignature = Tuple[G1Element]
 AnonymousCredential = Any
 DisclosureProof = Any
 
+
+class PublicKey:
+    def __init__(self, g1: G1Element, Y1: List[G1Element], g2: G2Element, X2: G2Element, Y2: List[G2Element]):
+        self.g1 = g1
+        self.Y1 = Y1
+        self.g2 = g2
+        self.X2 = X2
+        self.Y2 = Y2
+
+class SecretKey:
+    def __init__(self, x: Bn, X1: G1Element, y: List[int]):
+        self.x = x
+        self.X1 = X1
+        self.y = y
 
 ######################
 ## SIGNATURE SCHEME ##
@@ -68,15 +83,21 @@ def generate_key(
     sk_list[1] = X1
     for i in range(L):
         sk_list[i + 2] = ys[i]
-    sk: SecretKey = tuple(sk_list)
-    pk_list = [0 for _ in range(2 * L + 2)]
+    # sk: SecretKey = tuple(sk_list)
+
+    sk: SecretKey = SecretKey(x, X1, ys)
+
+    pk_list = [0 for _ in range(2 * L + 3)]
     pk_list[0] = g1
     pk_list[L + 1] = g2
     pk_list[L + 2] = X2
     for i in range(L):
         pk_list[i + 1] = Y1s[i]
-        pk_list[i + L + 2] = Y2s[i]
-    pk: PublicKey = tuple(pk_list)
+        pk_list[i + L + 3] = Y2s[i]
+    
+    # pk: PublicKey = tuple(pk_list)
+    pk = PublicKey(g1, Y1s, g2, X2, Y2s)
+
     return (sk, pk)
     # raise NotImplementedError()
 
@@ -107,12 +128,11 @@ def verify(
         msgs: List[bytes]
 ) -> bool:
     """ Verify the signature on a vector of messages """
-    X1 = pk[len(msgs)+2]
-    product = 1
+    product = pk.X2
     for i in range(len(msgs)):
-        product *= pk[i+1]**G1.hash_to_point(msgs[i])
-    return signature[0] != pk[0].neutral_element() \
-    and signature[0].pair(X1*product) == signature[1].pair(pk[len(msgs) + 1])
+        product *= pk.Y2[i] **Bn.from_binary(msgs[i])
+
+    return signature[0] != G2.neutral_element() and signature[0].pair(product) == signature[1].pair(pk.g2)
 
 
 #################################
