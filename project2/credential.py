@@ -67,13 +67,13 @@ def generate_key(
     for i in range(L):
         sk_list[i + 2] = ys[i]
     sk: SecretKey = tuple(sk_list)
-    pk_list = [0 for _ in range(2 * L + 2)]
+    pk_list = [0 for _ in range(2 * L + 3)]
     pk_list[0] = g1
     pk_list[L + 1] = g2
     pk_list[L + 2] = X2
     for i in range(L):
         pk_list[i + 1] = Y1s[i]
-        pk_list[i + L + 2] = Y2s[i]
+        pk_list[i + L + 3] = Y2s[i]
     pk: PublicKey = tuple(pk_list)
     return (sk, pk)
     # raise NotImplementedError()
