@@ -1,7 +1,40 @@
+import hashlib
 from typing import List
 
+import jsonpickle
+
 from credential import PublicKey, AttributeMap, IssueRequest, BlindSignature, AnonymousCredential, Attribute, verify
-from petrelic.multiplicative.pairing import G1, G2, GT, Bn
+from petrelic.multiplicative.pairing import G1, G2, GT, Bn, G1Element
+
+
+def get_challenge(R, generators, commitment, message):
+    sha256 = hashlib.sha256()
+    sha256.update(jsonpickle.encode(R))
+    sha256.update(jsonpickle.encode(commitment))
+    sha256.update(message)
+    for g in generators:
+        sha256.update(jsonpickle.encode(g))
+    return int.from_bytes(sha256.digest(), 'big')
+
+
+def pedersen_commitment(secrets, generators, commitment, message, group=G1):
+    rs = [group.order().random() for _ in range(len(secrets))]
+    R = group.neutral_element()
+    for i, r in enumerate(rs):
+        R *= generators[i] ** r
+    challenge = get_challenge(R, generators, commitment, message)
+    ss = [0 for _ in range(secrets)]
+    for i, r in enumerate(rs):
+        ss[i] = (r - challenge * secrets[i]) % group.order()
+    return challenge, ss
+
+
+def verify_petersen(c, ss, generators, commitment, message=b''):
+    R = commitment ** c
+    for i, g in enumerate(generators):
+        R *= g ** ss[i]
+    c_prime = get_challenge(R, generators, commitment, message)
+    return c_prime == c
 
 
 class User:
@@ -28,9 +61,10 @@ class User:
         self.t = G1.order().random()
         C = pk.g1 ** self.t
         for user_index in user_attributes:
-            C *= pk.Y1[user_index] ** Bn.from_binary(user_attributes[user_index])  # assuming attributes are Zp field elts
+            C *= pk.Y1[user_index] ** Bn.from_binary(user_attributes[user_index])
         # TODO: ZKP
-        return C
+        zkp = pedersen_commitment(self.hidden_attributes.items() + [self.t], pk.Y1 + [pk.g1], C)
+        return C, zkp
 
     def obtain_credential(
             self,
@@ -52,12 +86,9 @@ class User:
         # for i in self.hidden_attributes:
         #     hidden_prod *= s[0].pair(pk[self.L + 3 + i]) ** (Bn.from_binary(self.hidden_attributes[i]))
 
-
-
         # reconstruct array of all attributes in order
-        print(response)
         attrs = [self.disclosed_attributes[0], self.hidden_attributes[1], self.hidden_attributes[2]]
-        if verify(pk, response, attrs):
+        if verify(pk, s, attrs):
             return s
         else:
             return None

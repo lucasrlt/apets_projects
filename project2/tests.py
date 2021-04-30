@@ -41,7 +41,3 @@ def test_issuance_basic():
     credential = user.obtain_credential(issuer.pk, signed_request)
     print(credential)
     assert credential is not None
-
-
-# test_gen_key()
-test_issuance_basic()
