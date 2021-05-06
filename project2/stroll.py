@@ -5,6 +5,8 @@ Classes that you need to complete.
 from typing import Any, Dict, List, Union, Tuple
 
 # Optional import
+from credential import generate_key
+from issuer import Issuer
 from serialization import jsonpickle
 
 # Type aliases
@@ -14,7 +16,6 @@ State = Any
 class Server:
     """Server"""
 
-
     def __init__(self):
         """
         Server constructor.
@@ -22,13 +23,12 @@ class Server:
         ###############################################
         # TODO: Complete this function.
         ###############################################
-        raise NotImplementedError
-
+        self.issuer = None
 
     @staticmethod
     def generate_ca(
             subscriptions: List[str]
-        ) -> Tuple[bytes, bytes]:
+    ) -> Tuple[bytes, bytes]:
         """Initializes the credential system. Runs exactly once in the
         beginning. Decides on schemes public parameters and choses a secret key
         for the server.
@@ -47,8 +47,11 @@ class Server:
         ###############################################
         # TODO: Complete this function.
         ###############################################
-        raise NotImplementedError
-
+        # generate secret and public key based on attributes (subscriptions) ;
+        # we consider the public key to be the public param (maybe we will find others later?)
+        sk, pk = generate_key(
+            subscriptions)  # TODO: define clear types --> for now Attributes are bytes and not string hence the type pb here
+        return jsonpickle.encode(sk), jsonpickle.encode(pk)
 
     def process_registration(
             self,
@@ -57,7 +60,7 @@ class Server:
             issuance_request: bytes,
             username: str,
             subscriptions: List[str]
-        ) -> bytes:
+    ) -> bytes:
         """ Registers a new account on the server.
 
         Args:
@@ -74,16 +77,23 @@ class Server:
         ###############################################
         # TODO: Complete this function.
         ###############################################
-        raise NotImplementedError
-
+        sk = jsonpickle.decode(server_sk)
+        pk = jsonpickle.decode(server_pk)
+        request = jsonpickle.decode(issuance_request)
+        self.issuer = Issuer(sk, pk)
+        issuer_attributes = {0: subscriptions[0], 2: subscriptions[
+            2]}  # TODO: this is now completely arbitrary --> how to define disclosed attributes?
+        blindSignature = self.issuer.sign_issue_request(self.issuer.sk, self.issuer.pk, request, issuer_attributes)
+        # TODO: what is username used for?
+        return jsonpickle.encode(blindSignature)
 
     def check_request_signature(
-        self,
-        server_pk: bytes,
-        message: bytes,
-        revealed_attributes: List[str],
-        signature: bytes
-        ) -> bool:
+            self,
+            server_pk: bytes,
+            message: bytes,
+            revealed_attributes: List[str],
+            signature: bytes
+    ) -> bool:
         """ Verify the signature on the location request
 
         Args:
@@ -98,7 +108,10 @@ class Server:
         ###############################################
         # TODO: Complete this function.
         ###############################################
-        raise NotImplementedError
+        pk = jsonpickle.decode(server_pk)
+        s = jsonpickle.decode(signature)
+        #TODO: revealed_attributes useful for ...?
+        return self.issuer.verify_disclosure_proof(pk, s, message)
 
 
 class Client:
@@ -113,13 +126,12 @@ class Client:
         ###############################################
         raise NotImplementedError()
 
-
     def prepare_registration(
             self,
             server_pk: bytes,
             username: str,
             subscriptions: List[str]
-        ) -> Tuple[bytes, State]:
+    ) -> Tuple[bytes, State]:
         """Prepare a request to register a new account on the server.
 
         Args:
@@ -139,13 +151,12 @@ class Client:
         ###############################################
         raise NotImplementedError
 
-
     def process_registration_response(
             self,
             server_pk: bytes,
             server_response: bytes,
             private_state: State
-        ) -> bytes:
+    ) -> bytes:
         """Process the response from the server.
 
         Args:
@@ -162,14 +173,13 @@ class Client:
         ###############################################
         raise NotImplementedError
 
-
     def sign_request(
             self,
             server_pk: bytes,
             credentials: bytes,
             message: bytes,
             types: List[str]
-        ) -> bytes:
+    ) -> bytes:
         """Signs the request with the client's credential.
 
         Arg:

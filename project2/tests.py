@@ -42,11 +42,11 @@ def test_issuance_basic():
     print(credential)
     assert credential is not None
 
-def test_verify(): #TODO
+def test_verify(): #TODO: verify get true for valid signature and false for s[0]=neutral or wrong signature
     pass
 
-def test_ZKP(): #TODO
+def test_ZKP(): #TODO: test pedersen_commitment and verify_pedersen methods all together
     pass
 
-def test_showing_prot(): #TODO
+def test_showing_prot(): #TODO: test showing protocol flow (like issuance prot) I guess
     pass
