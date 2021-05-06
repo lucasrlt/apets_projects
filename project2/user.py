@@ -3,7 +3,8 @@ from typing import List
 
 import jsonpickle
 
-from credential import PublicKey, AttributeMap, IssueRequest, BlindSignature, AnonymousCredential, Attribute, verify
+from credential import PublicKey, AttributeMap, IssueRequest, BlindSignature, AnonymousCredential, Attribute, verify, \
+    DisclosureProof
 from petrelic.multiplicative.pairing import G1, G2, GT, Bn, G1Element
 
 
@@ -45,6 +46,13 @@ class User:
         self.hidden_attributes = hidden_attributes
         self.L = len(disclosed_attributes) + len(hidden_attributes)
 
+        # Create a list of all attributes
+        self.all_attributes = [None for _ in range(self.L)]
+        for key in disclosed_attributes:
+            self.all_attributes[key] = disclosed_attributes[key]
+        for key in hidden_attributes:
+            self.all_attributes[key] = hidden_attributes[key]
+
     ## ISSUANCE PROTOCOL ##
 
     def create_issue_request(
@@ -77,23 +85,37 @@ class User:
         """
         s = response[0], response[1] / (response[0] ** self.t)
 
-        # store s if valid (slide 44 ABC lecture)
-        # disclosed_prod = s[1].pair(pk[self.L + 1])
-        # for i in self.disclosed_attributes:
-        #     disclosed_prod *= s[0].pair(pk[self.L + 3 + i]) ** (-Bn.from_binary(self.disclosed_attributes[i]))
-
-        # hidden_prod = s[0].pair(pk[self.L + 1]) ** self.t
-        # for i in self.hidden_attributes:
-        #     hidden_prod *= s[0].pair(pk[self.L + 3 + i]) ** (Bn.from_binary(self.hidden_attributes[i]))
-
         # reconstruct array of all attributes in order
-        attrs = [self.disclosed_attributes[0], self.hidden_attributes[1], self.hidden_attributes[2]]
-        if verify(pk, s, attrs):
+        if verify(pk, s, self.all_attributes):
             return s
         else:
             return None
 
-        # if response[0] != G1.neutral_element() and disclosed_prod / s[0].pair(pk[self.L + 2]) == hidden_prod:
-        #     return s
-        # else:
-        #     return None
+    ### SHOWING PROTOCOL
+    def create_disclosure_proof(
+            self,
+            pk: PublicKey,
+            credential: AnonymousCredential,
+            message: bytes
+    ) -> DisclosureProof:
+        """ Create a disclosure proof """
+
+        r = G1.order().random()
+        t = G1.order().random()
+
+        s = (credential[0] ** r, (credential[1] * credential[0] ** t) ** r)
+
+        generators = []
+
+        commitment = s[0].pair(pk.g2) ** t
+        for i, ai in enumerate(self.hidden_attributes):
+            generator = s[0].pair(pk.Y2[i])
+            commitment *= generator ** ai
+            generators.append(s[0].pair(pk.Y2[i]))
+
+        # compute ZKP
+        zkp = pedersen_commitment(self.hidden_attributes.items() + [self.t], generator + s[0].pair(pk.g2), commitment,
+                                  b'', GT)
+
+        return s, zkp, commitment
+

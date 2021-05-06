@@ -41,3 +41,12 @@ def test_issuance_basic():
     credential = user.obtain_credential(issuer.pk, signed_request)
     print(credential)
     assert credential is not None
+
+def test_verify(): #TODO
+    pass
+
+def test_ZKP(): #TODO
+    pass
+
+def test_showing_prot(): #TODO
+    pass

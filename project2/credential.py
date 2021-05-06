@@ -35,7 +35,7 @@ Attribute = bytes
 AttributeMap = {int, Attribute}
 IssueRequest = G1Element
 BlindSignature = Tuple[G1Element]
-AnonymousCredential = Any
+AnonymousCredential = Tuple[G1Element]
 DisclosureProof = Any
 
 
@@ -115,12 +115,6 @@ def sign(
     signature = (h, h ** (exponent))
 
     return signature
-
-
-def test():
-    msgs = [b"hello", b"coucou"]
-    sk, pk = generate_key(msgs)
-    print(sign(sk, msgs))
 
 def verify(
         pk: PublicKey,
