@@ -10,6 +10,8 @@ from issuer import Issuer
 from serialization import jsonpickle
 
 # Type aliases
+from user import User
+
 State = Any
 
 
@@ -84,7 +86,7 @@ class Server:
         issuer_attributes = {0: subscriptions[0], 2: subscriptions[
             2]}  # TODO: this is now completely arbitrary --> how to define disclosed attributes?
         blindSignature = self.issuer.sign_issue_request(self.issuer.sk, self.issuer.pk, request, issuer_attributes)
-        # TODO: what is username used for?
+        # TODO: what is username used for? Maybe we'll see later (map username to their reveal attributes in a global var?)
         return jsonpickle.encode(blindSignature)
 
     def check_request_signature(
@@ -110,7 +112,7 @@ class Server:
         ###############################################
         pk = jsonpickle.decode(server_pk)
         s = jsonpickle.decode(signature)
-        #TODO: revealed_attributes useful for ...?
+        # TODO: revealed_attributes useful for ...?
         return self.issuer.verify_disclosure_proof(pk, s, message)
 
 
@@ -124,7 +126,7 @@ class Client:
         ###############################################
         # TODO: Complete this function.
         ###############################################
-        raise NotImplementedError()
+        self.user = None
 
     def prepare_registration(
             self,
@@ -149,7 +151,14 @@ class Client:
         ###############################################
         # TODO: Complete this function.
         ###############################################
-        raise NotImplementedError
+        pk = jsonpickle.decode(server_pk)
+        hidden_attributes = {}  # TODO: how to define hidden vs disclosed?
+        disclosed_attributes = {}
+        user = User(hidden_attributes,
+                    disclosed_attributes)  # TODO: these maps should actually maybe rather be {attr_name -> this_client_attr_value} instead of {attr_idx -> attr_name}
+        state = None  # TODO: need to define State
+        issue_req = user.create_issue_request(pk, hidden_attributes)
+        return jsonpickle.encode(issue_req), state
 
     def process_registration_response(
             self,
@@ -171,7 +180,11 @@ class Client:
         ###############################################
         # TODO: Complete this function.
         ###############################################
-        raise NotImplementedError
+        pk = jsonpickle.decode(server_pk)
+        response = jsonpickle.decode(server_response)
+        credentials = self.user.obtain_credential(pk, response)
+        #TODO: do smth with state
+        return jsonpickle.encode(credentials) #TODO: here we assume cedentials should be serialized
 
     def sign_request(
             self,
@@ -194,4 +207,8 @@ class Client:
         ###############################################
         # TODO: Complete this function.
         ###############################################
-        raise NotImplementedError
+        pk = jsonpickle.decode(server_pk)
+        creds = jsonpickle.decode(credentials)
+        proof = self.user.create_disclosure_proof(pk, creds, message)
+        #TODO: what is types useful for?
+        return jsonpickle.encode(proof)
