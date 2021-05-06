@@ -1,7 +1,7 @@
 from credential import SecretKey, PublicKey, IssueRequest, AttributeMap, BlindSignature, generate_key, DisclosureProof
 from petrelic.multiplicative.pairing import G1, G2, GT, Bn
 
-from user import verify_petersen
+from zkp import verify_petersen
 
 
 class Issuer:
