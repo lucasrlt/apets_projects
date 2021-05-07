@@ -9,12 +9,11 @@ from zkp import pedersen_commitment
 
 class User:
 
-    def __init__(self, username: str, disclosed_attributes: AttributeMap, hidden_attributes: AttributeMap, attributes: List[Attribute]):
+    def __init__(self, username: str, attributes: List[Attribute], hidden_attributes: AttributeMap):
         self.t = 0
         self.username = username
-        self.disclosed_attributes = disclosed_attributes #TODO: maybe these maps not needed here, only in stroll
-        self.hidden_attributes = hidden_attributes
         self.all_attributes = attributes
+        self.hidden_attributes = hidden_attributes
         self.L = len(attributes)
 
         '''# Create a list of all attributes
@@ -41,8 +40,13 @@ class User:
         C = pk.g1 ** self.t
         for user_index in user_attributes:
             C *= pk.Y1[user_index] ** Bn.from_binary(user_attributes[user_index])
+
+        
         # TODO: ZKP
-        zkp = pedersen_commitment(user_attributes.items() + [self.t], pk.Y1 + [pk.g1], C)
+        zkp = pedersen_commitment(
+            [Bn.from_binary(item[1]) for item in user_attributes.items()] + [self.t], 
+            [pk.Y1[idx] for idx in list(range(len(user_attributes.items())))] + [pk.g1], 
+            C)
         return C, zkp
 
     def obtain_credential(
@@ -54,6 +58,7 @@ class User:
 
         This corresponds to the "Unblinding signature" step.
         """
+        print(response)
         s = response[0], response[1] / (response[0] ** self.t)
 
         # reconstruct array of all attributes in order
@@ -85,7 +90,8 @@ class User:
             generators.append(s[0].pair(pk.Y2[i]))
 
         # compute ZKP
-        zkp = pedersen_commitment(self.hidden_attributes.items() + [self.t], generator + s[0].pair(pk.g2), commitment,
+        
+        zkp = pedersen_commitment([int.from_bytes(item[1]) for item in self.hidden_attributes.items()] + [self.t], generator + s[0].pair(pk.g2), commitment,
                                   b'', GT)
 
         return s, zkp, commitment

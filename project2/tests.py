@@ -30,10 +30,12 @@ from user import User
 
 def test_issuance_basic():
     attributes = [b"age", b"name", b"gender"]
-    disclosed_attributes = {0: attributes[0]}
-    hidden_attributes = {1: attributes[1],
-                         2: attributes[2]}
-    user = User(disclosed_attributes, hidden_attributes)
+    disclosed_attributes = {2: attributes[0]}
+    hidden_attributes = {0: attributes[1],
+                         1: attributes[2]}
+
+    all_attributes =  {0: hidden_attributes[0], 1: hidden_attributes[1], 2: disclosed_attributes[2]}
+    user = User("coucou", all_attributes, hidden_attributes)
     sk, pk = generate_key(attributes)
     issuer = Issuer(sk, pk)
     issue_request = user.create_issue_request(issuer.pk, hidden_attributes)
@@ -50,3 +52,6 @@ def test_ZKP(): #TODO: test pedersen_commitment and verify_pedersen methods all 
 
 def test_showing_prot(): #TODO: test showing protocol flow (like issuance prot) I guess
     pass
+
+
+test_issuance_basic()

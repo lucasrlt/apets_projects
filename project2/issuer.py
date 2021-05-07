@@ -26,11 +26,14 @@ class Issuer:
         C = request[0]
         zkp = request[1]
 
-        if not verify_petersen(zkp[0], zkp[1], pk.Y1 + [pk.g1], C):
+        # print("Coucou", request)
+        if not verify_petersen(zkp[0], zkp[1], pk.Y1[:len(zkp[1]) - 1] + [pk.g1], C):
+            print("Coucou je retourne none")
             return None
 
+        # print(issuer_attributes)
         prod = sk.X1 * C
-        for i in range(len(issuer_attributes)):
+        for i in issuer_attributes.keys():
             prod *= pk.Y1[i] ** Bn.from_binary(issuer_attributes[i])
 
         s_prime = (pk.g1 ** u, prod ** u)
