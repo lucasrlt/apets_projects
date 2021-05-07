@@ -15,28 +15,24 @@ resembles the original scheme definition. However, you are free to restructure
 the functions provided to resemble a more object-oriented interface.
 """
 
-from re import M
 from typing import Any, List, Tuple
-# from petrelic.multiplicative.pairing import G1, G2, GT
-from random import randint
 
-from serialization import jsonpickle
 from petrelic.bn import Bn
 from petrelic.multiplicative.pairing import G1, G1Element, G2, G2Element, GT
-from binascii import hexlify
 
 # Type hint aliases
 # Feel free to change them as you see fit.
 # Maybe at the end, you will not need aliases at all!
 # SecretKey = Any  # a tuple (x, X, y1, ..., yL)
 # PublicKey = Any
-Signature = Any
-Attribute = bytes
-AttributeMap = {int, Attribute}
+#TODO: verify all types are consistent with there actuel use (in functions)
+Signature = Any #TODO: class as pk and sk?
+Attribute = bytes #TODO: str instead?
+AttributeMap = {int, Attribute} #TODO: maybe {str, attr_value} instead makes more sense?
 IssueRequest = G1Element
 BlindSignature = Tuple[G1Element]
 AnonymousCredential = Tuple[G1Element]
-DisclosureProof = Any
+DisclosureProof = Any #TODO: class as pk and sk?
 
 
 class PublicKey:
@@ -105,7 +101,7 @@ def generate_key(
 def sign(
         sk: SecretKey,
         msgs: List[bytes]
-) -> Signature:
+) -> Signature: #TODO: remove this function? (especially if not tested/ not correct) but maybe useful for testing though
     """ Sign the vector of messages `msgs` """
     h = G1.generator()  # note: should be G1*
 
@@ -127,70 +123,3 @@ def verify(
         product *= pk.Y2[i] **Bn.from_binary(msgs[i])
 
     return signature[0] != G2.neutral_element() and signature[0].pair(product) == signature[1].pair(pk.g2)
-
-
-#################################
-## ATTRIBUTE-BASED CREDENTIALS ##
-#################################
-
-## ISSUANCE PROTOCOL ##
-
-def create_issue_request(
-        pk: PublicKey,
-        user_attributes: AttributeMap
-) -> IssueRequest:
-    """ Create an issuance request
-
-    This corresponds to the "user commitment" step in the issuance protocol.
-
-    *Warning:* You may need to pass state to the `obtain_credential` function.
-    """
-    raise NotImplementedError()
-
-
-def sign_issue_request(
-        sk: SecretKey,
-        pk: PublicKey,
-        request: IssueRequest,
-        issuer_attributes: AttributeMap
-) -> BlindSignature:
-    """ Create a signature corresponding to the user's request
-
-    This corresponds to the "Issuer signing" step in the issuance protocol.
-    """
-    raise NotImplementedError()
-
-
-def obtain_credential(
-        pk: PublicKey,
-        response: BlindSignature
-) -> AnonymousCredential:
-    """ Derive a credential from the issuer's response
-
-    This corresponds to the "Unblinding signature" step.
-    """
-    raise NotImplementedError()
-
-
-## SHOWING PROTOCOL ##
-
-def create_disclosure_proof(
-        pk: PublicKey,
-        credential: AnonymousCredential,
-        hidden_attributes: List[Attribute],
-        message: bytes
-) -> DisclosureProof:
-    """ Create a disclosure proof """
-    raise NotImplementedError()
-
-
-def verify_disclosure_proof(
-        pk: PublicKey,
-        disclosure_proof: DisclosureProof,
-        message: bytes
-) -> bool:
-    """ Verify the disclosure proof
-
-    Hint: The verifier may also want to retrieve the disclosed attributes
-    """
-    raise NotImplementedError()

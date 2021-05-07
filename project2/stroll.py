@@ -112,7 +112,7 @@ class Server:
         ###############################################
         pk = jsonpickle.decode(server_pk)
         s = jsonpickle.decode(signature)
-        # TODO: revealed_attributes useful for ...?
+        # TODO: revealed_attributes useful for ...? (linked to verified signature, maybe useful later)
         return self.issuer.verify_disclosure_proof(pk, s, message)
 
 
@@ -154,9 +154,9 @@ class Client:
         pk = jsonpickle.decode(server_pk)
         hidden_attributes = {}  # TODO: how to define hidden vs disclosed?
         disclosed_attributes = {}
-        user = User(hidden_attributes,
-                    disclosed_attributes)  # TODO: these maps should actually maybe rather be {attr_name -> this_client_attr_value} instead of {attr_idx -> attr_name}
-        state = None  # TODO: need to define State
+        user = User(username, hidden_attributes,
+                    disclosed_attributes, subscriptions)  # TODO: these maps should actually maybe rather be {attr_name -> this_client_attr_value} instead of {attr_idx -> attr_name}
+        state = None  # TODO: need to define State --> hidden & disclosed attributes?
         issue_req = user.create_issue_request(pk, hidden_attributes)
         return jsonpickle.encode(issue_req), state
 
