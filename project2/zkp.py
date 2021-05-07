@@ -32,7 +32,7 @@ def pedersen_commitment(secrets, generators, commitment, message=b"", group=G1):
         ss[i] = (r - challenge * secrets[i])
 
     # print("Wesh", ss)
-    return challenge, ss
+    return challenge, ss, commitment
 
 
 def verify_petersen(c, ss, generators, commitment, message=b""):

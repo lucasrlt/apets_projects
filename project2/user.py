@@ -58,7 +58,7 @@ class User:
 
         This corresponds to the "Unblinding signature" step.
         """
-        print(response)
+        # print(response)
         s = response[0], response[1] / (response[0] ** self.t)
 
         # reconstruct array of all attributes in order
@@ -79,19 +79,26 @@ class User:
         r = G1.order().random()
         t = G1.order().random()
 
-        s = (credential[0] ** r, (credential[1] * credential[0] ** t) ** r)
+        s = (credential[0] ** r, (credential[1] * (credential[0] ** t)) ** r)
 
         generators = []
 
         commitment = s[0].pair(pk.g2) ** t
-        for i, ai in enumerate(self.hidden_attributes):
+        # print(self.hidden_attributes)
+        for i, ai in enumerate(self.hidden_attributes.items()):
+            print(Bn.from_binary(ai[1]))
             generator = s[0].pair(pk.Y2[i])
-            commitment *= generator ** ai
+            commitment *= generator ** Bn.from_binary(ai[1])
             generators.append(s[0].pair(pk.Y2[i]))
 
         # compute ZKP
         
-        zkp = pedersen_commitment([int.from_bytes(item[1]) for item in self.hidden_attributes.items()] + [self.t], generator + s[0].pair(pk.g2), commitment,
-                                  b'', GT)
+        zkp = pedersen_commitment(
+            [Bn.from_binary(item[1]) for item in self.hidden_attributes.items()], 
+            generators + [s[0].pair(pk.g2)], 
+            commitment,
+            b'', GT)
+
+        print("Creation: ", commitment)
 
         return s, zkp, commitment

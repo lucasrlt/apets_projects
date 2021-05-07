@@ -51,7 +51,29 @@ def test_ZKP(): #TODO: test pedersen_commitment and verify_pedersen methods all 
     pass
 
 def test_showing_prot(): #TODO: test showing protocol flow (like issuance prot) I guess
-    pass
+    attributes = [b"age", b"name", b"gender"]
+    hidden_attributes = {0: attributes[1],
+                         1: attributes[2]}
+    disclosed_attributes = {2: attributes[0]}
+    all_attributes =  {0: hidden_attributes[0], 1: hidden_attributes[1], 2: disclosed_attributes[2]}
 
+    user = User("coucou", all_attributes, hidden_attributes)
+    sk, pk = generate_key(attributes)
+    issuer = Issuer(sk, pk)
+
+    issue_request = user.create_issue_request(issuer.pk, hidden_attributes)
+    signed_request = issuer.sign_issue_request(issuer.sk, issuer.pk, issue_request, disclosed_attributes)
+    credential = user.obtain_credential(issuer.pk, signed_request)
+
+    assert credential is not None
+
+    disclosure_proof = user.create_disclosure_proof(pk, credential, b"")
+    # print("Disclosure proof: ", disclosure_proof)
+
+    verification = issuer.verify_disclosure_proof(pk, disclosure_proof, b"")
+    print(verification)
+    assert verification is True
+    
 
 test_issuance_basic()
+test_showing_prot()

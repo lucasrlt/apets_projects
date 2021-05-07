@@ -52,10 +52,11 @@ class Issuer:
         Hint: The verifier may also want to retrieve the disclosed attributes
         """
         generators = []
-        for i in range(len(disclosure_proof[1][1])):
+        for i in range(len(disclosure_proof[1][1]) - 1):
             generators.append(disclosure_proof[0][0].pair(pk.Y2[i]))
+            
         return disclosure_proof[0][0] != G1.neutral_element() and verify_petersen(disclosure_proof[1][0],
                                                                                   disclosure_proof[1][1],
-                                                                                  generators + disclosure_proof[0][
-                                                                                      0].pair(pk.g2),
+                                                                                  generators + [disclosure_proof[0][
+                                                                                      0].pair(pk.g2)],
                                                                                   disclosure_proof[1][2], message)
