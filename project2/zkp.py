@@ -18,7 +18,6 @@ def get_challenge(R: Bn, generators: List[Any], commitment: Bn, message: bytes):
     return int.from_bytes(sha256.digest(), 'big')
 
 
-coucou = None
 def pedersen_commitment(secrets, generators, commitment, message=b"", group=G1):
     rs = [group.order().random() for _ in range(len(secrets))]
 
