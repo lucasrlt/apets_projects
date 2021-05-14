@@ -1,3 +1,4 @@
+import jsonpickle
 from credential import generate_key
 from petrelic.multiplicative.pairing import G1, G2, GT
 
@@ -41,7 +42,7 @@ def test_issuance_basic():
     issue_request = user.create_issue_request(issuer.pk, hidden_attributes)
     signed_request = issuer.sign_issue_request(issuer.sk, issuer.pk, issue_request, disclosed_attributes)
     credential = user.obtain_credential(issuer.pk, signed_request)
-    print(credential)
+    
     assert credential is not None
 
 def test_verify(): #TODO: verify get true for valid signature and false for s[0]=neutral or wrong signature
@@ -68,12 +69,35 @@ def test_showing_prot(): #TODO: test showing protocol flow (like issuance prot) 
     assert credential is not None
 
     disclosure_proof = user.create_disclosure_proof(pk, credential, b"")
-    # print("Disclosure proof: ", disclosure_proof)
 
     verification = issuer.verify_disclosure_proof(pk, disclosure_proof, b"")
-    print(verification)
+    assert verification is True
+
+def test_encoding():
+    all_attributes = {0: b'your_name', 1: b'restaurant', 2: b'bar', 3: b'dojo'}
+    hidden_attributes = {0: all_attributes[0]}
+
+    user = User(all_attributes[0], all_attributes, hidden_attributes)
+    sk, pk = generate_key(all_attributes)
+    issuer = Issuer(sk, pk)
+
+    issue_request = user.create_issue_request(issuer.pk, hidden_attributes)
+    # print(issue_request.)
+    for s in issue_request.list_ss:
+        print(s)
+        jsonpickle.encode(str(s))
+
+    signed_request = issuer.sign_issue_request(issuer.sk, issuer.pk, issue_request, disclosed_attributes)
+    credential = user.obtain_credential(issuer.pk, signed_request)
+
+    assert credential is not None
+
+    disclosure_proof = user.create_disclosure_proof(pk, credential, b"")
+
+    verification = issuer.verify_disclosure_proof(pk, disclosure_proof, b"")
     assert verification is True
     
 
 test_issuance_basic()
 test_showing_prot()
+# test_encoding()
