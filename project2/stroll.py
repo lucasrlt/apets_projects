@@ -163,14 +163,11 @@ class Client:
 
         hidden_attributes = { 0: username.encode() } 
 
-        print("here", all_attributes)
-
         user = User(username, all_attributes,
                     hidden_attributes)  # TODO: these maps should actually maybe rather be {attr_name -> this_client_attr_value} instead of {attr_idx -> attr_name}
         
         issue_req = user.create_issue_request(pk, hidden_attributes)
 
-        print(issue_req)
         return jsonpickle.encode(issue_req).encode(), user
 
     def process_registration_response(
