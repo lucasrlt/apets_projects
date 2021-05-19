@@ -3,6 +3,7 @@ Classes that you need to complete.
 """
 
 from typing import Any, Dict, List, Union, Tuple
+from zkp import KnowledgeProof
 
 # Optional import
 from credential import generate_key
@@ -87,6 +88,7 @@ class Server:
         issuer_attributes = { }
         for i in range(len(subscriptions)):
             issuer_attributes[i + 1] = subscriptions[i].encode()
+
         blindSignature = self.issuer.sign_issue_request(self.issuer.sk, self.issuer.pk, request, issuer_attributes)
         
         return jsonpickle.encode(blindSignature).encode()
@@ -231,7 +233,5 @@ class Client:
 
         user = User("", attributes, { 0: attributes[str(0)] })
         proof = user.create_disclosure_proof(pk, creds, message)
-
-
 
         return jsonpickle.encode(proof).encode()

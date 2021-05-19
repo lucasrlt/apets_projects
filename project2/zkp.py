@@ -13,7 +13,7 @@ class KnowledgeProof:
     + the fiat shamir heuristic to make the proof non-interactive. 
     """
 
-    def __init__(self, challenge: int, list_ss: List[Any], commitment: Bn):
+    def __init__(self, challenge: int, list_ss: List[Any], commitment: Any):
         self.challenge = challenge
         self.list_ss = list_ss
         self.commitment = commitment

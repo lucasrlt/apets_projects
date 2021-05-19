@@ -34,7 +34,7 @@ IssueRequest = KnowledgeProof
 BlindSignature = Tuple[G1Element]
 
 class AnonymousCredential:
-    def __init__(self, credential: G1Element, all_attributes: AttributeMap):
+    def __init__(self, credential: Tuple[G1Element, G1Element], all_attributes: AttributeMap):
         self.credential = credential
         self.all_attributes = all_attributes
 
