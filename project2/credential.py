@@ -16,6 +16,7 @@ the functions provided to resemble a more object-oriented interface.
 """
 
 from typing import Any, List, Tuple
+from zkp import KnowledgeProof
 
 from petrelic.bn import Bn
 from petrelic.multiplicative.pairing import G1, G1Element, G2, G2Element, GT
@@ -26,14 +27,21 @@ from petrelic.multiplicative.pairing import G1, G1Element, G2, G2Element, GT
 # SecretKey = Any  # a tuple (x, X, y1, ..., yL)
 # PublicKey = Any
 #TODO: verify all types are consistent with there actuel use (in functions)
-Signature = Any #TODO: class as pk and sk?
+Signature = Tuple[G1Element, G1Element]
 Attribute = bytes #TODO: str instead?
 AttributeMap = {int, Attribute} #TODO: maybe {str, attr_value} instead makes more sense?
-IssueRequest = G1Element
+IssueRequest = KnowledgeProof
 BlindSignature = Tuple[G1Element]
-AnonymousCredential = Tuple[G1Element]
-DisclosureProof = Any #TODO: class as pk and sk?
 
+class AnonymousCredential:
+    def __init__(self, credential: Tuple[G1Element, G1Element], all_attributes: AttributeMap):
+        self.credential = credential
+        self.all_attributes = all_attributes
+
+class DisclosureProof:
+    def __init__(self, signature: Signature, knowledge_proof: KnowledgeProof):
+        self.signature = signature
+        self.knowledge_proof = knowledge_proof
 
 class PublicKey:
     def __init__(self, g1: G1Element, Y1: List[G1Element], g2: G2Element, X2: G2Element, Y2: List[G2Element]):
@@ -58,59 +66,31 @@ def generate_key(
         attributes: List[Attribute]
 ) -> Tuple[SecretKey, PublicKey]:
     """ Generate signer key pair """
-    L = len(attributes)
+    
+    attributes_count = len(attributes)
+
+    # Initialization values
     p = G1.order()
-    x = p.random()
-    ys = [0 for _ in range(L)]
-    for i in range(L):
-        ys[i] = p.random()
     g1 = G1.generator()
     g2 = G2.generator()
-    X1 = g1 ** x
-    X2 = g2 ** x
-    Y1s = [0 for _ in range(L)]
-    Y2s = [0 for _ in range(L)]
-    for i in range(L):
-        Y1s[i] = g1 ** ys[i]
-        Y2s[i] = g2 ** ys[i]
 
-    sk_list = [0 for _ in range(L + 2)]
-    sk_list[0] = x
-    sk_list[1] = X1
-    for i in range(L):
-        sk_list[i + 2] = ys[i]
-    # sk: SecretKey = tuple(sk_list)
+    ##  Creation of the secret key
+    x = p.random()
+    X1 = g1 ** x 
+    ys = [p.random() for _ in range(attributes_count)]
 
-    sk: SecretKey = SecretKey(x, X1, ys)
+    secret_key = SecretKey(x, X1, ys)
 
-    pk_list = [0 for _ in range(2 * L + 3)]
-    pk_list[0] = g1
-    pk_list[L + 1] = g2
-    pk_list[L + 2] = X2
-    for i in range(L):
-        pk_list[i + 1] = Y1s[i]
-        pk_list[i + L + 3] = Y2s[i]
     
-    # pk: PublicKey = tuple(pk_list)
-    pk = PublicKey(g1, Y1s, g2, X2, Y2s)
+    ## Creation of the public key
+    X2 = g2 ** x
 
-    return (sk, pk)
-    # raise NotImplementedError()
+    Y1s = [g1 ** ys[i] for i in range(attributes_count)]
+    Y2s = [g2 ** ys[i] for i in range(attributes_count)]
 
+    public_key = PublicKey(g1, Y1s, g2, X2, Y2s)
 
-def sign(
-        sk: SecretKey,
-        msgs: List[bytes]
-) -> Signature: #TODO: remove this function? (especially if not tested/ not correct) but maybe useful for testing though
-    """ Sign the vector of messages `msgs` """
-    h = G1.generator()  # note: should be G1*
-
-    exponent = sk[0]
-    for idx, msg in enumerate(msgs):
-        exponent += sk[2 + idx] * Bn.from_binary(msg).mod(G1.order())
-    signature = (h, h ** (exponent))
-
-    return signature
+    return (secret_key, public_key)
 
 def verify(
         pk: PublicKey,
