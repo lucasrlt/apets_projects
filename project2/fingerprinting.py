@@ -4,6 +4,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import StratifiedKFold
 
+from scapy.all import *
 
 def classify(train_features, train_labels, test_features, test_labels):
 
@@ -54,10 +55,31 @@ def perform_crossval(features, labels, folds=10):
     labels = np.array(labels)
     features = np.array(features)
 
+    testing_set = []
+
     for train_index, test_index in kf.split(features, labels):
         X_train, X_test = features[train_index], features[test_index]
         y_train, y_test = labels[train_index], labels[test_index]
         predictions = classify(X_train, y_train, X_test, y_test)
+
+        # print("Here: ", X_test)
+        print("+======= Here2l ", y_test)
+
+        print("Result: ", predictions)
+        result = []
+        for i in range(len(y_test)):
+            result.append(y_test[i] == predictions[i])
+        print("Au final: ", result)
+
+        res = 0
+        for r in result:
+            if r:
+                res += 1
+        print("Pourcentage: ", res / len(result) * 100)
+
+
+
+    # print(result)
 
     ###############################################
     # TODO: Write code to evaluate the performance of your classifier
@@ -98,6 +120,22 @@ def load_data():
     features = []
     labels = []
 
+    for i in range(1, 11):
+        for j in range(1, 101):
+            print(f"Loading ./traces/{i}/grid{j}_trace{i}.pcap")
+            p = rdpcap(f'./traces/{i}/grid{j}_trace{i}.pcap')
+
+            # n packet
+            np = len(p)
+
+            # time
+            t = p[np - 1]['IP']['TCP'].options[2][1][0] - p[0]['IP']['TCP'].options[2][1][0]
+
+            features.append([np, t])
+            labels.append(j)
+
+
+
     return features, labels
         
 def main():
@@ -111,6 +149,7 @@ def main():
     """
 
     features, labels = load_data()
+    # print(features, labels)
     perform_crossval(features, labels, folds=10)
     
 if __name__ == "__main__":

@@ -92,6 +92,7 @@ class User:
 
         # generation of private values 
         secrets_list = [Bn.from_binary(item[1]) for item in self.hidden_attributes.items()]
+        secrets_list += [self.t]
 
 
         # generation of public values
