@@ -57,27 +57,31 @@ def perform_crossval(features, labels, folds=10):
 
     testing_set = []
 
+    avg = []
     for train_index, test_index in kf.split(features, labels):
         X_train, X_test = features[train_index], features[test_index]
         y_train, y_test = labels[train_index], labels[test_index]
         predictions = classify(X_train, y_train, X_test, y_test)
 
         # print("Here: ", X_test)
-        print("+======= Here2l ", y_test)
+        # print("+======= Here2l ", y_test)
 
-        print("Result: ", predictions)
+        # print("Result: ", predictions)
         result = []
         for i in range(len(y_test)):
             result.append(y_test[i] == predictions[i])
-        print("Au final: ", result)
+        # print("Au final: ", result)
 
         res = 0
         for r in result:
             if r:
                 res += 1
+
         print("Pourcentage: ", res / len(result) * 100)
+        avg.append(res / len(result) * 100)
 
 
+    print("Final result: ", sum(avg) / len(avg))
 
     # print(result)
 
@@ -120,6 +124,7 @@ def load_data():
     features = []
     labels = []
 
+    max_len = 0
     for i in range(1, 11):
         for j in range(1, 101):
             print(f"Loading ./traces/{i}/grid{j}_trace{i}.pcap")
@@ -131,8 +136,29 @@ def load_data():
             # time
             t = p[np - 1]['IP']['TCP'].options[2][1][0] - p[0]['IP']['TCP'].options[2][1][0]
 
-            features.append([np, t])
+            # count number of http OK
+            nb = 0
+            http_lens = []
+            for packet in p:
+                if packet['TCP'].payload:
+                    #count the number of OK response
+                    if "HTTP/1.0 200 OK" in packet['TCP'].load.decode('utf-8'):
+                        nb += 1
+
+                    # len of http payloads
+                    http_lens.append(len(packet['TCP']))
+
+
+            features.append([np, t, nb] + http_lens)
+            if len(features[len(features) - 1]) > max_len:
+                max_len = len(features[len(features) - 1])
+
+            print(features)
             labels.append(j)
+
+    for feature in features:
+        for i in range(max_len - len(feature)):
+            feature.append(0)
 
 
 
@@ -150,7 +176,7 @@ def main():
 
     features, labels = load_data()
     # print(features, labels)
-    perform_crossval(features, labels, folds=10)
+    perform_crossval(features, labels, folds=2)
     
 if __name__ == "__main__":
     try:
