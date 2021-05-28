@@ -58,36 +58,45 @@ def perform_crossval(features, labels, folds=10):
     testing_set = []
 
     avg = []
+    accuracy_per_point = [0] * 100
+    count_per_point = [0] * 100
     for train_index, test_index in kf.split(features, labels):
         X_train, X_test = features[train_index], features[test_index]
         y_train, y_test = labels[train_index], labels[test_index]
         predictions = classify(X_train, y_train, X_test, y_test)
 
-        # print("Here: ", X_test)
-        # print("+======= Here2l ", y_test)
 
-        # print("Result: ", predictions)
+        ###############################################
+        # TODO: Write code to evaluate the performance of your classifier
+        ###############################################
         result = []
         for i in range(len(y_test)):
+            if y_test[i]== predictions[i]:
+                accuracy_per_point[y_test[i] - 1] += 1
+            count_per_point[y_test[i] - 1] += 1
+
             result.append(y_test[i] == predictions[i])
-        # print("Au final: ", result)
 
-        res = 0
-        for r in result:
+        ## Compute total accuracy
+        total_accuracy = 0
+        for idx, r in enumerate(result):
             if r:
-                res += 1
+                total_accuracy += 1
 
-        print("Pourcentage: ", res / len(result) * 100)
-        avg.append(res / len(result) * 100)
+        ## Compute accuracy per grid point
+        
+
+        print("Pourcentage: ", total_accuracy / len(result) * 100)
+        avg.append(total_accuracy / len(result) * 100)
 
 
     print("Final result: ", sum(avg) / len(avg))
+    # accuracy_per_point = list(map(accuracy_per_point(lambda x: x / 10 * 100)))
 
-    # print(result)
+    for i in range(len(accuracy_per_point)):
+            accuracy_per_point[i] = accuracy_per_point[i] / count_per_point[i] * 100
+    print("Per point: ", accuracy_per_point)
 
-    ###############################################
-    # TODO: Write code to evaluate the performance of your classifier
-    ###############################################
 
 def load_data():
 
@@ -130,36 +139,38 @@ def load_data():
             print(f"Loading ./traces/{i}/grid{j}_trace{i}.pcap")
             p = rdpcap(f'./traces/{i}/grid{j}_trace{i}.pcap')
 
-            # n packet
+            # Feature 1: number of packets 
             np = len(p)
 
-            # time
+            # Feature 2: time the request took
             t = p[np - 1]['IP']['TCP'].options[2][1][0] - p[0]['IP']['TCP'].options[2][1][0]
 
-            # count number of http OK
+            # Feature 3: HTTP packets metadata
             nb = 0
             http_lens = []
             for packet in p:
                 if packet['TCP'].payload:
-                    #count the number of OK response
+                    # Feature 3.1: Number of HTTP OKs
                     if "HTTP/1.0 200 OK" in packet['TCP'].load.decode('utf-8'):
                         nb += 1
 
-                    # len of http payloads
+                    # Feature 3.2: Length of each HTTP payload
                     http_lens.append(len(packet['TCP']))
 
 
             features.append([np, t, nb] + http_lens)
+
+            # Store the max http packets length to pad the rest of the data 
+            # data we use to fit has to be of the same length
             if len(features[len(features) - 1]) > max_len:
                 max_len = len(features[len(features) - 1])
 
-            print(features)
             labels.append(j)
 
+    # Pad data with 0s to have arrays of the same length
     for feature in features:
         for i in range(max_len - len(feature)):
             feature.append(0)
-
 
 
     return features, labels
@@ -176,7 +187,7 @@ def main():
 
     features, labels = load_data()
     # print(features, labels)
-    perform_crossval(features, labels, folds=2)
+    perform_crossval(features, labels, folds=10)
     
 if __name__ == "__main__":
     try:
