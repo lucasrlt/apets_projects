@@ -20,7 +20,7 @@ do
     tcpdump -i lo 'port 9050' -w traces/$trace_num/grid$grid_id\_trace$trace_num.pcap &
     sleep 1
 
-    echo "python3 client.py grid $grid_id -t > /dev/null"
+    echo "python3 client.py grid $grid_id -t> /dev/null"
     python3 client.py grid $grid_id -t > /dev/null
     sleep 2
 

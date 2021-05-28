@@ -89,11 +89,6 @@ class User:
 
         randomized_signature = (credential.credential[0] ** r, (credential.credential[1] * (credential.credential[0] ** t)) ** r)
 
-
-        # generation of private values 
-        #secrets_list = [Bn.from_binary(item) for item in self.hidden_attributes]
-
-
         # generation of public values
         public_generators = [randomized_signature[0].pair(pk.Y2[i]) for i in range(len(self.hidden_attributes))]
         public_generators += [randomized_signature[0].pair(pk.g2)]
