@@ -85,9 +85,9 @@ class Server:
         request = jsonpickle.decode(issuance_request.decode())
 
         self.issuer = Issuer(sk, pk)
-        issuer_attributes = { }
+        issuer_attributes = []
         for i in range(len(subscriptions)):
-            issuer_attributes[i + 1] = subscriptions[i].encode()
+            issuer_attributes.append(subscriptions[i].encode())
 
         blindSignature = self.issuer.sign_issue_request(self.issuer.sk, self.issuer.pk, request, issuer_attributes)
         
@@ -159,14 +159,14 @@ class Client:
         ###############################################
         pk = jsonpickle.decode(server_pk.decode())
 
-        all_attributes = { 0: username.encode() }
+        all_attributes = [username.encode()]
         for i in range(len(subscriptions)):
-            all_attributes[i + 1] = subscriptions[i].encode()
+            all_attributes.append(subscriptions[i].encode())
 
-        hidden_attributes = { 0: username.encode() } 
+        hidden_attributes = [username.encode()]
 
         user = User(username, all_attributes,
-                    hidden_attributes)  # TODO: these maps should actually maybe rather be {attr_name -> this_client_attr_value} instead of {attr_idx -> attr_name}
+                    hidden_attributes)
         
         issue_req = user.create_issue_request(pk, hidden_attributes)
 
@@ -226,12 +226,12 @@ class Client:
         attributes = creds.all_attributes
 
         # gets attributes that should be disclosed in the request from the credential
-        disclosed_attributes = {}
-        for idx, attr in enumerate(attributes.items()):
-            if attr[1] in types:
-                disclosed_attributes[idx] = attr[1]
+        # disclosed_attributes = {}
+        # for idx, attr in enumerate(attributes):
+        #     if attr[1] in types:
+        #         disclosed_attributes[idx] = attr[1]
 
-        user = User("", attributes, { 0: attributes[str(0)] })
+        user = User("", attributes, attributes[0])
         proof = user.create_disclosure_proof(pk, creds, message)
 
         return jsonpickle.encode(proof).encode()

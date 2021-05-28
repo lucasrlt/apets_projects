@@ -65,8 +65,8 @@ def test_successful_request():
 
     assert issue_request.challenge is not None
     assert isinstance(issue_request.commitment, G1Element)
-    assert len(user_state.hidden_attributes.items()) == 1
-    assert len(issue_request.list_ss) == len(user_state.hidden_attributes.items()) + 1
+    assert len(user_state.hidden_attributes) == 1
+    assert len(issue_request.list_ss) == len(user_state.hidden_attributes) + 1
     assert len(user_state.all_attributes) == 4
 
 
@@ -84,7 +84,7 @@ def test_successful_request():
 
     assert credential is not None
     assert isinstance(credential.credential[0], G1Element) and isinstance(credential.credential[1], G1Element)
-    assert credential.all_attributes == { '0': b"test", '1': b"t1", '2': b"t2", '3': b"t3" }
+    assert credential.all_attributes == [b"test", b"t1", b"t2", b"t3"]
 
 
     # Create a secret stroll request (disclosure proof) and test it
@@ -92,7 +92,7 @@ def test_successful_request():
     stroll_request: DisclosureProof = decode_data(stroll_request_enc)
 
     assert isinstance(stroll_request.signature[0], G1Element) and isinstance(stroll_request.signature[1], G1Element)
-    assert stroll_request.knowledge_proof is not None
+    assert stroll_request.commitment is not None
 
 
     # Test that the request is valid

@@ -58,13 +58,17 @@ class Issuer:
         """
 
         # generate the list of public generators
-        public_generators = []
-        for i in range(len(disclosure_proof.knowledge_proof.list_ss) - 1):
-            public_generators.append(disclosure_proof.signature[0].pair(pk.Y2[i]))
+        # public_generators = []
+        # for i in range(len(disclosure_proof.knowledge_proof.list_ss) - 1):
+        #     public_generators.append(disclosure_proof.signature[0].pair(pk.Y2[i]))
+        #
+        # public_generators += [disclosure_proof.signature[0].pair(pk.g2)] # add the last generator
 
-        public_generators += [disclosure_proof.signature[0].pair(pk.g2)] # add the last generator
-        #TODO: verify proof equality
-
+        com_prime = disclosure_proof.signature[1].pair(pk.g2)
+        for i, a in enumerate(disclosed_attributes):
+            com_prime /= disclosure_proof.signature[0].pair(pk.Y2[i + 1]) ** Bn.from_binary(a)
+        com_prime /= disclosure_proof.signature[0].pair(pk.X2)
+        sign_valid = com_prime.eq(disclosure_proof.commitment)
             
         #is_kp_valid = KnowledgeProof.verify_commitment(disclosure_proof.knowledge_proof, public_generators, message)
         return disclosure_proof.signature[0] != G1.neutral_element() and sign_valid#or is_kp_valid

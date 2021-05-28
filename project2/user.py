@@ -91,11 +91,11 @@ class User:
 
 
         # generation of private values 
-        secrets_list = [Bn.from_binary(item) for item in self.hidden_attributes]
+        #secrets_list = [Bn.from_binary(item) for item in self.hidden_attributes]
 
 
         # generation of public values
-        public_generators = [randomized_signature[i].pair(pk.Y2[i]) for i in range(len(self.hidden_attributes))]
+        public_generators = [randomized_signature[0].pair(pk.Y2[i]) for i in range(len(self.hidden_attributes))]
         public_generators += [randomized_signature[0].pair(pk.g2)]
 
         # create a commitment based on all hidden attributes

@@ -41,6 +41,7 @@ class AnonymousCredential:
 class DisclosureProof:
     def __init__(self, signature: Signature, commitment: GTElement):
         self.signature = signature
+        self.commitment = commitment
         #self.knowledge_proof = knowledge_proof
 
 class PublicKey:
