@@ -6,7 +6,7 @@ from typing import Any, Dict, List, Union, Tuple
 from zkp import KnowledgeProof
 
 # Optional import
-from credential import generate_key
+from credential import generate_key, Attribute
 from issuer import Issuer
 from serialization import jsonpickle
 
@@ -30,7 +30,7 @@ class Server:
 
     @staticmethod
     def generate_ca(
-            subscriptions: List[str]
+            subscriptions: List[Attribute]
     ) -> Tuple[bytes, bytes]:
         """Initializes the credential system. Runs exactly once in the
         beginning. Decides on schemes public parameters and choses a secret key
@@ -53,7 +53,7 @@ class Server:
         # generate secret and public key based on attributes (subscriptions) ;
         # we consider the public key to be the public param (maybe we will find others later?)
         sk, pk = generate_key(
-            subscriptions)  # TODO: define clear types --> for now Attributes are bytes and not string hence the type pb here
+            subscriptions)
         return jsonpickle.encode(sk).encode(), jsonpickle.encode(pk).encode()
 
     def process_registration(
@@ -62,7 +62,7 @@ class Server:
             server_pk: bytes,
             issuance_request: bytes,
             username: str,
-            subscriptions: List[str]
+            subscriptions: List[Attribute]
     ) -> bytes:
         """ Registers a new account on the server.
 
@@ -86,8 +86,8 @@ class Server:
 
         self.issuer = Issuer(sk, pk)
         issuer_attributes = { }
-        for i in range(len(subscriptions)):
-            issuer_attributes[i + 1] = subscriptions[i].encode()
+        for i in range(1,len(subscriptions)+1): # in our design the indices of revealed attributes (i.e. subscriptions) always correspond to all indices of attributes but the 1st one (secret username)
+            issuer_attributes[i + 1] = subscriptions[i]#.encode()
 
         blindSignature = self.issuer.sign_issue_request(self.issuer.sk, self.issuer.pk, request, issuer_attributes)
         
@@ -97,7 +97,7 @@ class Server:
             self,
             server_pk: bytes,
             message: bytes,
-            revealed_attributes: List[str],
+            revealed_attributes: List[Attribute],
             signature: bytes
     ) -> bool:
         """ Verify the signature on the location request
@@ -119,7 +119,7 @@ class Server:
 
         self.issuer = Issuer(None, pk)
         # TODO: revealed_attributes useful for ...? (linked to verified signature, maybe useful later)
-        return self.issuer.verify_disclosure_proof(pk, s, message)
+        return self.issuer.verify_disclosure_proof(pk, s, message, revealed_attributes)
 
 
 class Client:
@@ -138,7 +138,7 @@ class Client:
             self,
             server_pk: bytes,
             username: str,
-            subscriptions: List[str]
+            subscriptions: List[Attribute]
     ) -> Tuple[bytes, User]:
         """Prepare a request to register a new account on the server.
 
@@ -161,12 +161,12 @@ class Client:
 
         all_attributes = { 0: username.encode() }
         for i in range(len(subscriptions)):
-            all_attributes[i + 1] = subscriptions[i].encode()
+            all_attributes[i + 1] = subscriptions[i]#.encode()
 
         hidden_attributes = { 0: username.encode() } 
 
         user = User(username, all_attributes,
-                    hidden_attributes)  # TODO: these maps should actually maybe rather be {attr_name -> this_client_attr_value} instead of {attr_idx -> attr_name}
+                    hidden_attributes)  # TODO: maybe list instead of maps
         
         issue_req = user.create_issue_request(pk, hidden_attributes)
 
@@ -203,7 +203,7 @@ class Client:
             server_pk: bytes,
             credentials: bytes,
             message: bytes,
-            types: List[str]
+            types: List[Attribute]
     ) -> bytes:
         """Signs the request with the client's credential.
 
@@ -226,6 +226,7 @@ class Client:
         attributes = creds.all_attributes
 
         # gets attributes that should be disclosed in the request from the credential
+        #TODO: useful?
         disclosed_attributes = {}
         for idx, attr in enumerate(attributes.items()):
             if attr[1] in types:

@@ -3,7 +3,8 @@ from jsonpickle.unpickler import decode
 from petrelic.bn import Bn
 from stroll import Client, Server
 import jsonpickle
-from credential import AnonymousCredential, BlindSignature, DisclosureProof, IssueRequest, PublicKey, SecretKey, generate_key
+from credential import AnonymousCredential, BlindSignature, DisclosureProof, IssueRequest, PublicKey, SecretKey, \
+    generate_key, Attribute
 from petrelic.multiplicative.pairing import G1, G1Element, G2, G2Element, GT
 
 from issuer import Issuer
@@ -20,8 +21,8 @@ from user import User
 def decode_data(data: bytes):
     return jsonpickle.decode(data.decode())
 
-def get_keys(subscriptions: List[str]) -> Tuple[bytes, bytes]:
-    sk_enc, pk_enc = Server.generate_ca(["username"] + subscriptions)
+def get_keys(subscriptions: List[Attribute]) -> Tuple[bytes, bytes]:
+    sk_enc, pk_enc = Server.generate_ca([b'username'] + subscriptions)
     return sk_enc, pk_enc
 
 #### =============
@@ -30,7 +31,7 @@ def get_keys(subscriptions: List[str]) -> Tuple[bytes, bytes]:
 
 ## Test that the keys were generated correctly by the server
 def test_key_generation():
-    subscriptions = ["t1", "t2", "t3"]
+    subscriptions = [b't1', b't2', b't3']
     sk_enc, pk_enc = get_keys(subscriptions)
     sk: SecretKey = decode_data(sk_enc)
     pk: PublicKey = decode_data(pk_enc)
@@ -53,7 +54,7 @@ def test_key_generation():
     
 ## Test the successful generation of a credential step by step, as well as a stroll request
 def test_successful_request():
-    subscriptions = ["t1", "t2", "t3"]
+    subscriptions = [b't1', b't2', b't3']
     username = "test"
     sk, pk = get_keys(subscriptions)
     server, client = Server(), Client()
@@ -92,7 +93,7 @@ def test_successful_request():
     stroll_request: DisclosureProof = decode_data(stroll_request_enc)
 
     assert isinstance(stroll_request.signature[0], G1Element) and isinstance(stroll_request.signature[1], G1Element)
-    assert stroll_request.knowledge_proof is not None
+    assert stroll_request.commitment is not None
 
 
     # Test that the request is valid
@@ -107,7 +108,7 @@ def test_successful_request():
 ### If any attribute of a credential is changed, the system should fail 
 ### and not return any credential
 def test_credential_tampering():
-    subscriptions = ["t1", "t2", "t3"]
+    subscriptions = [b"t1", b"t2", b"t3"]
     username = "test"
     sk, pk = get_keys(subscriptions)
 
@@ -121,13 +122,26 @@ def test_credential_tampering():
     
     credential_enc = client.process_registration_response(pk, blind_signature_enc, user_state)
     credential: AnonymousCredential = decode_data(credential_enc)
-    assert credential is None # credential was tampered, it should be None. 
+    assert credential is None # credential was tampered, it should be None.
+
+def test_attribute_tampering():
+    subscriptions = [b"t1", b"t2", b"t3"]
+    username = "test"
+    sk, pk = get_keys(subscriptions)
+    server, client = Server(), Client()
+
+    issue_request_enc, user_state = client.prepare_registration(pk, username, subscriptions)
+    blind_signature_enc = server.process_registration(sk, pk, issue_request_enc, username, subscriptions)
+    credential_enc = client.process_registration_response(pk, blind_signature_enc, user_state)
+    signature = client.sign_request(pk, credential_enc, b'30.00.00', subscriptions)
+
+    assert not server.check_request_signature(pk, b'', subscriptions, signature)
 
 
 ### Two credentials generated from the same set of attributes should be
 ### different. Credentials should not be linked.
 def test_credential_should_be_different():
-    subscriptions = ["t1", "t2", "t3"]
+    subscriptions = [b"t1", b"t2", b"t3"]
     username = "test"
     sk, pk = get_keys(subscriptions)
 

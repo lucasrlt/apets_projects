@@ -15,21 +15,21 @@ resembles the original scheme definition. However, you are free to restructure
 the functions provided to resemble a more object-oriented interface.
 """
 
-from typing import Any, List, Tuple
+from typing import List, Tuple
 from zkp import KnowledgeProof
 
 from petrelic.bn import Bn
-from petrelic.multiplicative.pairing import G1, G1Element, G2, G2Element, GT
+from petrelic.multiplicative.pairing import G1, G1Element, G2, G2Element, GTElement
 
 # Type hint aliases
 # Feel free to change them as you see fit.
 # Maybe at the end, you will not need aliases at all!
 # SecretKey = Any  # a tuple (x, X, y1, ..., yL)
 # PublicKey = Any
-#TODO: verify all types are consistent with there actuel use (in functions)
+#TODO: verify all types are consistent with there actual use (in functions)
 Signature = Tuple[G1Element, G1Element]
 Attribute = bytes #TODO: str instead?
-AttributeMap = {int, Attribute} #TODO: maybe {str, attr_value} instead makes more sense?
+AttributeMap = {int, Attribute} #TODO: useful?
 IssueRequest = KnowledgeProof
 BlindSignature = Tuple[G1Element]
 
@@ -39,9 +39,10 @@ class AnonymousCredential:
         self.all_attributes = all_attributes
 
 class DisclosureProof:
-    def __init__(self, signature: Signature, knowledge_proof: KnowledgeProof):
+    def __init__(self, signature: Signature, commitment: GTElement):
+        self.commitment = commitment
         self.signature = signature
-        self.knowledge_proof = knowledge_proof
+        #self.knowledge_proof = knowledge_proof
 
 class PublicKey:
     def __init__(self, g1: G1Element, Y1: List[G1Element], g2: G2Element, X2: G2Element, Y2: List[G2Element]):
@@ -102,4 +103,4 @@ def verify(
     for i in range(len(msgs)):
         product *= pk.Y2[i] **Bn.from_binary(msgs[i])
 
-    return signature[0] != G2.neutral_element() and signature[0].pair(product) == signature[1].pair(pk.g2)
+    return not signature[0].eq(G2.neutral_element()) and signature[0].pair(product).eq(signature[1].pair(pk.g2))

@@ -44,7 +44,7 @@ class User:
         list_secrets += [self.t] # t is a random value considered a secret too
 
         # Fetch the list of public generators from the public key. One per secret attribute
-        list_generators = [pk.Y1[idx] for idx in list(range(len(user_attributes.items())))]
+        list_generators = [pk.Y1[idx] for idx in user_attributes.keys()]
         list_generators += [pk.g1] # generator for t
 
         knowledge_proof = KnowledgeProof.create_commitment(
@@ -90,28 +90,28 @@ class User:
         randomized_signature = (credential.credential[0] ** r, (credential.credential[1] * (credential.credential[0] ** t)) ** r)
 
 
-        # generation of private values 
-        secrets_list = [Bn.from_binary(item[1]) for item in self.hidden_attributes.items()]
-
-
-        # generation of public values
-        public_generators = [randomized_signature[i].pair(pk.Y2[i]) for i in range(len(self.hidden_attributes.items()))]
-        public_generators += [randomized_signature[0].pair(pk.g2)]
+        # # generation of private values
+        # secrets_list = [Bn.from_binary(item[1]) for item in self.hidden_attributes.items()] + [t]
+        #
+        #
+        # # generation of public values
+        # public_generators = [randomized_signature[0].pair(pk.Y2[i]) for i in range(len(self.hidden_attributes.items()))]
+        # public_generators += [randomized_signature[0].pair(pk.g2)]
 
         # create a commitment based on all hidden attributes
         commitment = randomized_signature[0].pair(pk.g2) ** t
-        for i, attribute in enumerate(self.hidden_attributes.items()):
+        for i in self.hidden_attributes.keys():
             generator = randomized_signature[0].pair(pk.Y2[i])
-            commitment *= generator ** Bn.from_binary(attribute[1])
+            commitment *= generator ** Bn.from_binary(self.hidden_attributes[i])
             
 
         # compute ZKP
-        knowledge_proof = KnowledgeProof.create_commitment(
-            secrets_list, 
-            public_generators,
-            commitment,
-            message, 
-            GT # we must use the group GT for the disclosure proof
-        )
+        # knowledge_proof = KnowledgeProof.create_commitment(
+        #     secrets_list,
+        #     public_generators,
+        #     commitment,
+        #     message,
+        #     GT # we must use the group GT for the disclosure proof
+        # )
 
-        return DisclosureProof(randomized_signature, knowledge_proof)
+        return DisclosureProof(randomized_signature, commitment)
