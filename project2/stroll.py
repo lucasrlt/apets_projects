@@ -119,7 +119,7 @@ class Server:
 
         self.issuer = Issuer(None, pk)
         # TODO: revealed_attributes useful for ...? (linked to verified signature, maybe useful later)
-        return self.issuer.verify_disclosure_proof(pk, s, message)
+        return self.issuer.verify_disclosure_proof(pk, s, message, revealed_attributes)
 
 
 class Client:

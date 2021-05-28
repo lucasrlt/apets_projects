@@ -1,4 +1,6 @@
-from credential import SecretKey, PublicKey, IssueRequest, AttributeMap, BlindSignature, generate_key, DisclosureProof
+from typing import List
+
+from credential import SecretKey, PublicKey, IssueRequest, BlindSignature, generate_key, DisclosureProof, Attribute
 from petrelic.multiplicative.pairing import G1, G2, GT, Bn
 from zkp import KnowledgeProof
 
@@ -16,7 +18,7 @@ class Issuer:
             sk: SecretKey,
             pk: PublicKey,
             request: IssueRequest,
-            issuer_attributes: AttributeMap
+            issuer_attributes: List[Attribute]
     ) -> BlindSignature:
         """ Create a signature corresponding to the user's request
 
@@ -35,8 +37,9 @@ class Issuer:
 
         # Create a signature corresponding to the user's request on disclosed attributes
         prod = sk.X1 * request.commitment
-        for i in issuer_attributes.keys():
-            prod *= pk.Y1[i] ** Bn.from_binary(issuer_attributes[i])
+        n_hidden_attr = len(pk.Y1) - len(issuer_attributes)
+        for i,a in enumerate(issuer_attributes):
+            prod *= pk.Y1[n_hidden_attr+i] ** Bn.from_binary(a)
 
         s_prime = (pk.g1 ** u, prod ** u)
         return s_prime
@@ -46,7 +49,8 @@ class Issuer:
             self,
             pk: PublicKey,
             disclosure_proof: DisclosureProof,
-            message: bytes
+            message: bytes,
+            disclosed_attributes: List[Attribute]
     ) -> bool:
         """ Verify the disclosure proof
 
@@ -59,6 +63,8 @@ class Issuer:
             public_generators.append(disclosure_proof.signature[0].pair(pk.Y2[i]))
 
         public_generators += [disclosure_proof.signature[0].pair(pk.g2)] # add the last generator
+        #TODO: verify proof equality
+
             
-        is_kp_valid = KnowledgeProof.verify_commitment(disclosure_proof.knowledge_proof, public_generators, message)
-        return disclosure_proof.signature[0] != G1.neutral_element() or is_kp_valid
+        #is_kp_valid = KnowledgeProof.verify_commitment(disclosure_proof.knowledge_proof, public_generators, message)
+        return disclosure_proof.signature[0] != G1.neutral_element() and sign_valid#or is_kp_valid

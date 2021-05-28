@@ -19,7 +19,7 @@ from typing import Any, List, Tuple
 from zkp import KnowledgeProof
 
 from petrelic.bn import Bn
-from petrelic.multiplicative.pairing import G1, G1Element, G2, G2Element, GT
+from petrelic.multiplicative.pairing import G1, G1Element, G2, G2Element, GT, GTElement
 
 # Type hint aliases
 # Feel free to change them as you see fit.
@@ -29,19 +29,19 @@ from petrelic.multiplicative.pairing import G1, G1Element, G2, G2Element, GT
 #TODO: verify all types are consistent with there actuel use (in functions)
 Signature = Tuple[G1Element, G1Element]
 Attribute = bytes #TODO: str instead?
-AttributeMap = {int, Attribute} #TODO: maybe {str, attr_value} instead makes more sense?
+#AttributeMap = {int, Attribute} #TODO: maybe {str, attr_value} instead makes more sense?
 IssueRequest = KnowledgeProof
 BlindSignature = Tuple[G1Element]
 
 class AnonymousCredential:
-    def __init__(self, credential: Tuple[G1Element, G1Element], all_attributes: AttributeMap):
+    def __init__(self, credential: Tuple[G1Element, G1Element], all_attributes: List[Attribute]):
         self.credential = credential
         self.all_attributes = all_attributes
 
 class DisclosureProof:
-    def __init__(self, signature: Signature, knowledge_proof: KnowledgeProof):
+    def __init__(self, signature: Signature, commitment: GTElement):
         self.signature = signature
-        self.knowledge_proof = knowledge_proof
+        #self.knowledge_proof = knowledge_proof
 
 class PublicKey:
     def __init__(self, g1: G1Element, Y1: List[G1Element], g2: G2Element, X2: G2Element, Y2: List[G2Element]):

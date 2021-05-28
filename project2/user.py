@@ -1,6 +1,6 @@
 from typing import List
 
-from credential import PublicKey, AttributeMap, IssueRequest, BlindSignature, AnonymousCredential, Attribute, verify, \
+from credential import PublicKey, IssueRequest, BlindSignature, AnonymousCredential, Attribute, verify, \
     DisclosureProof
 from petrelic.multiplicative.pairing import G1, G2, GT, Bn, G1Element
 
@@ -12,7 +12,7 @@ class User:
     The user has a username, a total list of attributes and a list of hidden attributes. 
     """
 
-    def __init__(self, username: str, attributes: List[Attribute], hidden_attributes: AttributeMap):
+    def __init__(self, username: str, attributes: List[Attribute], hidden_attributes: List[Attribute]):
         self.t = 0 # used for the signature scheme, initialized later
 
         self.username = username
@@ -24,7 +24,7 @@ class User:
     def create_issue_request(
             self,
             pk: PublicKey,
-            user_attributes: AttributeMap #TODO: changed hidden_attribute by user_attr since equal, verify funciton still consistent
+            user_attributes: List[Attribute] #TODO: changed hidden_attribute by user_attr since equal, verify funciton still consistent
     ) -> IssueRequest:
         """ Create an issuance request
 
@@ -36,15 +36,15 @@ class User:
 
         # Compute issue request commitment
         commitment = pk.g1 ** self.t
-        for user_index in user_attributes:
-            commitment *= pk.Y1[user_index] ** Bn.from_binary(user_attributes[user_index])
+        for i,a in enumerate(user_attributes):
+            commitment *= pk.Y1[i] ** Bn.from_binary(a)
 
         # Generate the list of secrets and parse them to big numbers
-        list_secrets = [Bn.from_binary(secret[1]) for secret in user_attributes.items()]
+        list_secrets = [Bn.from_binary(secret) for secret in user_attributes]
         list_secrets += [self.t] # t is a random value considered a secret too
 
         # Fetch the list of public generators from the public key. One per secret attribute
-        list_generators = [pk.Y1[idx] for idx in list(range(len(user_attributes.items())))]
+        list_generators = [pk.Y1[idx] for idx in list(range(len(user_attributes)))]
         list_generators += [pk.g1] # generator for t
 
         knowledge_proof = KnowledgeProof.create_commitment(
@@ -91,27 +91,27 @@ class User:
 
 
         # generation of private values 
-        secrets_list = [Bn.from_binary(item[1]) for item in self.hidden_attributes.items()]
+        secrets_list = [Bn.from_binary(item) for item in self.hidden_attributes]
 
 
         # generation of public values
-        public_generators = [randomized_signature[i].pair(pk.Y2[i]) for i in range(len(self.hidden_attributes.items()))]
+        public_generators = [randomized_signature[i].pair(pk.Y2[i]) for i in range(len(self.hidden_attributes))]
         public_generators += [randomized_signature[0].pair(pk.g2)]
 
         # create a commitment based on all hidden attributes
         commitment = randomized_signature[0].pair(pk.g2) ** t
-        for i, attribute in enumerate(self.hidden_attributes.items()):
+        for i, attribute in enumerate(self.hidden_attributes):
             generator = randomized_signature[0].pair(pk.Y2[i])
-            commitment *= generator ** Bn.from_binary(attribute[1])
+            commitment *= generator ** Bn.from_binary(attribute)
             
 
         # compute ZKP
-        knowledge_proof = KnowledgeProof.create_commitment(
-            secrets_list, 
-            public_generators,
-            commitment,
-            message, 
-            GT # we must use the group GT for the disclosure proof
-        )
+        # knowledge_proof = KnowledgeProof.create_commitment(
+        #     secrets_list,
+        #     public_generators,
+        #     commitment,
+        #     message,
+        #     GT # we must use the group GT for the disclosure proof
+        # )
 
-        return DisclosureProof(randomized_signature, knowledge_proof)
+        return DisclosureProof(randomized_signature, commitment)
