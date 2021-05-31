@@ -117,9 +117,11 @@ class Server:
         pk = jsonpickle.decode(server_pk.decode())
         s = jsonpickle.decode(signature.decode())
 
+        disclosed_attributes = list(map(lambda x: x.encode(), revealed_attributes))
+
         self.issuer = Issuer(None, pk)
         # TODO: revealed_attributes useful for ...? (linked to verified signature, maybe useful later)
-        return self.issuer.verify_disclosure_proof(pk, s, message, revealed_attributes)
+        return self.issuer.verify_disclosure_proof(pk, s, message, disclosed_attributes)
 
 
 class Client:
@@ -231,7 +233,7 @@ class Client:
         #     if attr[1] in types:
         #         disclosed_attributes[idx] = attr[1]
 
-        user = User("", attributes, attributes[0])
+        user = User(attributes[0], attributes, [attributes[0]])
         proof = user.create_disclosure_proof(pk, creds, message)
 
         return jsonpickle.encode(proof).encode()

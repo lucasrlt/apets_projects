@@ -147,7 +147,11 @@ def test_credential_should_be_different():
     
     assert credential_enc_1 != credential_enc_2 # credential was tampered, it should be None. 
 
+print("RUNNING ALL TESTS")
+
 test_key_generation()
 test_successful_request()
 test_credential_tampering()
 test_credential_should_be_different()
+
+print("ALL TESTS PASSED!")
