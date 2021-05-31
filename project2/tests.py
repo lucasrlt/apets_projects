@@ -99,31 +99,6 @@ def test_successful_request():
     assert server.check_request_signature(pk, b'', subscriptions, stroll_request_enc)
     
 
-
-### =============
-### FAILING CASES 
-### =============
-
-### If any attribute of a credential is changed, the system should fail 
-### and not return any credential
-def test_credential_tampering():
-    subscriptions = ["t1", "t2", "t3"]
-    username = "test"
-    sk, pk = get_keys(subscriptions)
-
-    server, client = Server(), Client()
-
-    issue_request_enc, user_state = client.prepare_registration(pk, username, subscriptions)
-    blind_signature_enc = server.process_registration(sk, pk, issue_request_enc, username, subscriptions)
-
-    # change some user attributes after the registration has been registered by the server
-    user_state.all_attributes[1] = b"tampered_attribute"
-    
-    credential_enc = client.process_registration_response(pk, blind_signature_enc, user_state)
-    credential: AnonymousCredential = decode_data(credential_enc)
-    assert credential is None # credential was tampered, it should be None. 
-
-
 ### Two credentials generated from the same set of attributes should be
 ### different. Credentials should not be linked.
 def test_credential_should_be_different():
@@ -147,11 +122,95 @@ def test_credential_should_be_different():
     
     assert credential_enc_1 != credential_enc_2 # credential was tampered, it should be None. 
 
+
+### =============
+### FAILING CASES 
+### =============
+
+### If any hidden attribute of a credential is changed, the system should fail 
+### and not return any credential
+def test_credential_request_hidden_tampering():
+    subscriptions = ["t1", "t2", "t3"]
+    username = "test"
+    sk, pk = get_keys(subscriptions)
+
+    server, client = Server(), Client()
+
+    issue_request_enc, user_state = client.prepare_registration(pk, username, subscriptions)
+    blind_signature_enc = server.process_registration(sk, pk, issue_request_enc, username, subscriptions)
+
+    # change some hidden user attributes after the registration has been registered by the server
+    # attributes[0] is a hidden attribute here - the username.
+    user_state.all_attributes[0] = b"tampered_attribute_hidden"
+    user_state.hidden_attributes[0] = b"tampered_attribute_hidden"
+    
+    credential_enc = client.process_registration_response(pk, blind_signature_enc, user_state)
+    credential: AnonymousCredential = decode_data(credential_enc)
+    assert credential is None # credential was tampered, it should be None. 
+
+
+## If any disclosed attribute of a signed issue request is changed, 
+## the system should fail and not return any credential
+def test_credential_request_disclosed_tampering():
+    subscriptions = ["t1", "t2", "t3"]
+    username = "test"
+    sk, pk = get_keys(subscriptions)
+
+    server, client = Server(), Client()
+
+    issue_request_enc, user_state = client.prepare_registration(pk, username, subscriptions)
+    blind_signature_enc = server.process_registration(sk, pk, issue_request_enc, username, subscriptions)
+
+    # change some disclosed user attributes after the registration has been registered by the server
+    user_state.all_attributes[1] = b"tampered_attribute_disclosed"
+    
+    credential_enc = client.process_registration_response(pk, blind_signature_enc, user_state)
+    credential: AnonymousCredential = decode_data(credential_enc)
+    assert credential is None # credential was tampered, it should be None. 
+
+
+def test_disclosure_proof_tampering():
+    subscriptions = ["t1", "t2", "t3"]
+    username = "test"
+    sk, pk = get_keys(subscriptions)
+    server, client = Server(), Client()
+    
+
+    # Generate issue request and test it
+    issue_request_enc, user_state = client.prepare_registration(pk, username, subscriptions)
+    issue_request: IssueRequest = decode_data(issue_request_enc)
+
+
+    # Process registration and test it server-side
+    blind_signature_enc = server.process_registration(sk, pk, issue_request_enc, username, subscriptions)
+    blind_signature: BlindSignature = decode_data(blind_signature_enc)
+
+
+    # Obtain credential client side and test it 
+    credential_enc = client.process_registration_response(pk, blind_signature_enc, user_state)
+    credential: AnonymousCredential = decode_data(credential_enc)
+
+    # Create a secret stroll request (disclosure proof) and test it
+    stroll_request_enc = client.sign_request(pk, credential_enc, b'30.00.00', subscriptions)
+    stroll_request: DisclosureProof = decode_data(stroll_request_enc)
+
+    assert isinstance(stroll_request.signature[0], G1Element) and isinstance(stroll_request.signature[1], G1Element)
+    assert stroll_request.commitment is not None
+
+    subscriptions = ["tampered", "t2", "t3"]
+
+    # Test that the request is valid
+    assert server.check_request_signature(pk, b'', subscriptions, stroll_request_enc)
+    
+
+
 print("RUNNING ALL TESTS")
 
 test_key_generation()
 test_successful_request()
-test_credential_tampering()
+test_credential_request_hidden_tampering()
+test_credential_request_disclosed_tampering()
 test_credential_should_be_different()
+test_disclosure_proof_tampering()
 
 print("ALL TESTS PASSED!")

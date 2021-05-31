@@ -57,13 +57,6 @@ class Issuer:
         Hint: The verifier may also want to retrieve the disclosed attributes
         """
 
-        # generate the list of public generators
-        # public_generators = []
-        # for i in range(len(disclosure_proof.knowledge_proof.list_ss) - 1):
-        #     public_generators.append(disclosure_proof.signature[0].pair(pk.Y2[i]))
-        #
-        # public_generators += [disclosure_proof.signature[0].pair(pk.g2)] # add the last generator
-
         com_prime = disclosure_proof.signature[1].pair(pk.g2)
         for i, a in enumerate(disclosed_attributes):
             com_prime /= disclosure_proof.signature[0].pair(pk.Y2[i + 1]) ** Bn.from_binary(a)
