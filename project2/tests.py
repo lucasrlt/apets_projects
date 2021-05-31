@@ -169,38 +169,34 @@ def test_credential_request_disclosed_tampering():
     assert credential is None # credential was tampered, it should be None. 
 
 
+## After a stroll request has been signed over a set of subscriptions (disclosed attributes) 
+## with a credential, the server's signature check should fail if any subscription was changed. 
+## A stroll request should only be valid over its given set of disclosed attributes.
 def test_disclosure_proof_tampering():
     subscriptions = ["t1", "t2", "t3"]
     username = "test"
+    message = b'30.00.00'
     sk, pk = get_keys(subscriptions)
     server, client = Server(), Client()
-    
 
     # Generate issue request and test it
     issue_request_enc, user_state = client.prepare_registration(pk, username, subscriptions)
-    issue_request: IssueRequest = decode_data(issue_request_enc)
-
 
     # Process registration and test it server-side
     blind_signature_enc = server.process_registration(sk, pk, issue_request_enc, username, subscriptions)
-    blind_signature: BlindSignature = decode_data(blind_signature_enc)
-
 
     # Obtain credential client side and test it 
     credential_enc = client.process_registration_response(pk, blind_signature_enc, user_state)
-    credential: AnonymousCredential = decode_data(credential_enc)
 
     # Create a secret stroll request (disclosure proof) and test it
-    stroll_request_enc = client.sign_request(pk, credential_enc, b'30.00.00', subscriptions)
-    stroll_request: DisclosureProof = decode_data(stroll_request_enc)
+    stroll_request_enc = client.sign_request(pk, credential_enc, message, subscriptions)
 
-    assert isinstance(stroll_request.signature[0], G1Element) and isinstance(stroll_request.signature[1], G1Element)
-    assert stroll_request.commitment is not None
-
+    # Change some subscriptions
     subscriptions = ["tampered", "t2", "t3"]
+    # message = b"ouiii"
 
-    # Test that the request is valid
-    assert server.check_request_signature(pk, b'', subscriptions, stroll_request_enc)
+    # Test that the request signature is invalid, 
+    assert not server.check_request_signature(pk, message, subscriptions, stroll_request_enc)
     
 
 

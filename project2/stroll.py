@@ -227,6 +227,8 @@ class Client:
 
         attributes = creds.all_attributes
 
+        print(attributes)
+        print(types)
         # gets attributes that should be disclosed in the request from the credential
         # disclosed_attributes = {}
         # for idx, attr in enumerate(attributes):

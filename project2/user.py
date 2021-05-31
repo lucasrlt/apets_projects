@@ -89,6 +89,9 @@ class User:
 
         randomized_signature = (credential.credential[0] ** r, (credential.credential[1] * (credential.credential[0] ** t)) ** r)
 
+        # add the message to the hidden attributes
+        # self.hidden_attributes.append(message)
+
         # generation of public values
         public_generators = [randomized_signature[0].pair(pk.Y2[i]) for i in range(len(self.hidden_attributes))]
         public_generators += [randomized_signature[0].pair(pk.g2)]
