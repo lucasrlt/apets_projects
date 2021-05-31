@@ -50,18 +50,24 @@ class Issuer:
             pk: PublicKey,
             disclosure_proof: DisclosureProof,
             message: bytes,
-            disclosed_attributes: List[Attribute]
+            revealed_attributes: List[Attribute] # queried types for a location request, it is not the set of all subscriptions
     ) -> bool:
         """ Verify the disclosure proof
 
         Hint: The verifier may also want to retrieve the disclosed attributes
         """
 
+        # recompute the commitment from the set of all subscriptions (stored in the disclosure proof)
         com_prime = disclosure_proof.signature[1].pair(pk.g2)
-        for i, a in enumerate(disclosed_attributes):
+        for i, a in enumerate(disclosure_proof.disclosed_attributes):
             com_prime /= disclosure_proof.signature[0].pair(pk.Y2[i + 1]) ** Bn.from_binary(a)
-        com_prime /= disclosure_proof.signature[0].pair(pk.X2)
-        sign_valid = com_prime.eq(disclosure_proof.commitment)
             
-        #is_kp_valid = KnowledgeProof.verify_commitment(disclosure_proof.knowledge_proof, public_generators, message)
-        return disclosure_proof.signature[0] != G1.neutral_element() and sign_valid#or is_kp_valid
+        com_prime /= disclosure_proof.signature[0].pair(pk.X2)
+
+        # compute the challenge over the queried types and the message to prevent tampering
+        challenge = KnowledgeProof.get_challenge(None, revealed_attributes, com_prime, message)
+        com_prime = com_prime ** challenge
+
+        is_signature_valid = com_prime.eq(disclosure_proof.commitment)
+            
+        return disclosure_proof.signature[0] != G1.neutral_element() and is_signature_valid

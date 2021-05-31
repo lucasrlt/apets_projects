@@ -79,7 +79,8 @@ class User:
             self,
             pk: PublicKey,
             credential: AnonymousCredential,
-            message: bytes
+            message: bytes,
+            revealed_attributes: List[Attribute] # queried types for a location request, it is not the set of all subscriptions
     ) -> DisclosureProof:
         """ Create a disclosure proof """
 
@@ -89,27 +90,17 @@ class User:
 
         randomized_signature = (credential.credential[0] ** r, (credential.credential[1] * (credential.credential[0] ** t)) ** r)
 
-        # add the message to the hidden attributes
-        # self.hidden_attributes.append(message)
-
-        # generation of public values
-        public_generators = [randomized_signature[0].pair(pk.Y2[i]) for i in range(len(self.hidden_attributes))]
-        public_generators += [randomized_signature[0].pair(pk.g2)]
-
         # create a commitment based on all hidden attributes
         commitment = randomized_signature[0].pair(pk.g2) ** t
         for i, attribute in enumerate(self.hidden_attributes):
             generator = randomized_signature[0].pair(pk.Y2[i])
             commitment *= generator ** Bn.from_binary(attribute)
-            
+        
+        # create a non-interactive challenge over the queried types and the message to prevent tampering
+        challenge = KnowledgeProof.get_challenge(None, revealed_attributes, commitment, message)
+        commitment = commitment ** challenge 
 
-        # compute ZKP
-        # knowledge_proof = KnowledgeProof.create_commitment(
-        #     secrets_list,
-        #     public_generators,
-        #     commitment,
-        #     message,
-        #     GT # we must use the group GT for the disclosure proof
-        # )
+        # store all user's public subscriptions in the disclosure proof so the issuer can access them
+        disclosed_attributes = [x for x in self.all_attributes if x not in self.hidden_attributes]
 
-        return DisclosureProof(randomized_signature, commitment)
+        return DisclosureProof(randomized_signature, commitment, disclosed_attributes)

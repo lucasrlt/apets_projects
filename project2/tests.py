@@ -54,7 +54,9 @@ def test_key_generation():
 ## Test the successful generation of a credential step by step, as well as a stroll request
 def test_successful_request():
     subscriptions = ["t1", "t2", "t3"]
+    queried_subscriptions = ["t1", "t2"]
     username = "test"
+    message = b'30.00.00'
     sk, pk = get_keys(subscriptions)
     server, client = Server(), Client()
     
@@ -68,7 +70,6 @@ def test_successful_request():
     assert len(user_state.hidden_attributes) == 1
     assert len(issue_request.list_ss) == len(user_state.hidden_attributes) + 1
     assert len(user_state.all_attributes) == 4
-
 
     # Process registration and test it server-side
     blind_signature_enc = server.process_registration(sk, pk, issue_request_enc, username, subscriptions)
@@ -88,7 +89,7 @@ def test_successful_request():
 
 
     # Create a secret stroll request (disclosure proof) and test it
-    stroll_request_enc = client.sign_request(pk, credential_enc, b'30.00.00', subscriptions)
+    stroll_request_enc = client.sign_request(pk, credential_enc, message, queried_subscriptions)
     stroll_request: DisclosureProof = decode_data(stroll_request_enc)
 
     assert isinstance(stroll_request.signature[0], G1Element) and isinstance(stroll_request.signature[1], G1Element)
@@ -96,7 +97,7 @@ def test_successful_request():
 
 
     # Test that the request is valid
-    assert server.check_request_signature(pk, b'', subscriptions, stroll_request_enc)
+    assert server.check_request_signature(pk, message, queried_subscriptions, stroll_request_enc)
     
 
 ### Two credentials generated from the same set of attributes should be
@@ -189,15 +190,70 @@ def test_disclosure_proof_tampering():
     credential_enc = client.process_registration_response(pk, blind_signature_enc, user_state)
 
     # Create a secret stroll request (disclosure proof) and test it
-    stroll_request_enc = client.sign_request(pk, credential_enc, message, subscriptions)
+    queried_types = ["t1", "t2"]
+    stroll_request_enc = client.sign_request(pk, credential_enc, message, queried_types)
 
     # Change some subscriptions
-    subscriptions = ["tampered", "t2", "t3"]
-    # message = b"ouiii"
+    tampered_subscriptions = ["t1", "t3"]
 
     # Test that the request signature is invalid, 
-    assert not server.check_request_signature(pk, message, subscriptions, stroll_request_enc)
+    assert not server.check_request_signature(pk, message, tampered_subscriptions, stroll_request_enc)
     
+
+## After a stroll request has been signed over a given message with a credential,
+## the server's signature check should fail if this message was changed. 
+def test_message_tampering():
+    subscriptions = ["t1", "t2", "t3"]
+    username = "test"
+    message = b'30.00.00'
+    sk, pk = get_keys(subscriptions)
+    server, client = Server(), Client()
+
+    # Generate issue request and test it
+    issue_request_enc, user_state = client.prepare_registration(pk, username, subscriptions)
+
+    # Process registration and test it server-side
+    blind_signature_enc = server.process_registration(sk, pk, issue_request_enc, username, subscriptions)
+
+    # Obtain credential client side and test it 
+    credential_enc = client.process_registration_response(pk, blind_signature_enc, user_state)
+
+    # Create a secret stroll request (disclosure proof) and test it
+    queried_types = ["t1", "t2"]
+    stroll_request_enc = client.sign_request(pk, credential_enc, message, queried_types)
+
+    # Change request message
+    tampered_message = "jajajaja"
+
+    # Test that the request signature is invalid, 
+    assert not server.check_request_signature(pk, message, tampered_message, stroll_request_enc)
+
+
+## Stroll requests should only work on valid POI types, e.g. the ones that are subscribed too
+## during the registration phase and the issuance of the credential. If an invalid POI type is
+## queried, the request should fail. 
+def test_invalid_queried_type():
+    subscriptions = ["t1", "t2", "t3"] # set of valid query types
+    username = "test"
+    message = b'30.00.00'
+    sk, pk = get_keys(subscriptions)
+    server, client = Server(), Client()
+
+    # Generate issue request and test it
+    issue_request_enc, user_state = client.prepare_registration(pk, username, subscriptions)
+
+    # Process registration and test it server-side
+    blind_signature_enc = server.process_registration(sk, pk, issue_request_enc, username, subscriptions)
+
+    # Obtain credential client side and test it 
+    credential_enc = client.process_registration_response(pk, blind_signature_enc, user_state)
+
+    # Create a secret stroll request (disclosure proof) and test it
+    queried_types = ["invalid", "t2"]
+    stroll_request_enc = client.sign_request(pk, credential_enc, message, queried_types)
+
+    # Test that the request signature is invalid, 
+    assert not server.check_request_signature(pk, message, queried_types, stroll_request_enc)
 
 
 print("RUNNING ALL TESTS")
@@ -207,6 +263,8 @@ test_successful_request()
 test_credential_request_hidden_tampering()
 test_credential_request_disclosed_tampering()
 test_credential_should_be_different()
+test_message_tampering()
+test_invalid_queried_type()
 test_disclosure_proof_tampering()
 
 print("ALL TESTS PASSED!")

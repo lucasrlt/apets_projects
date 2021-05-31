@@ -97,7 +97,7 @@ class Server:
             self,
             server_pk: bytes,
             message: bytes,
-            revealed_attributes: List[str],
+            revealed_attributes: List[str], # contains the queried types for a location request
             signature: bytes
     ) -> bool:
         """ Verify the signature on the location request
@@ -117,11 +117,15 @@ class Server:
         pk = jsonpickle.decode(server_pk.decode())
         s = jsonpickle.decode(signature.decode())
 
-        disclosed_attributes = list(map(lambda x: x.encode(), revealed_attributes))
+        ## Check that the queried types are part of the valid subscriptions
+        queried_types = list(map(lambda x: x.encode(), revealed_attributes))
+        for queried_type in queried_types:
+            if not queried_type in s.disclosed_attributes:
+                return False
+
 
         self.issuer = Issuer(None, pk)
-        # TODO: revealed_attributes useful for ...? (linked to verified signature, maybe useful later)
-        return self.issuer.verify_disclosure_proof(pk, s, message, disclosed_attributes)
+        return self.issuer.verify_disclosure_proof(pk, s, message, queried_types)
 
 
 class Client:
@@ -225,17 +229,10 @@ class Client:
         pk = jsonpickle.decode(server_pk.decode())
         creds = jsonpickle.decode(credentials.decode())
 
-        attributes = creds.all_attributes
+        username = creds.all_attributes[0]
+        queried_types = list(map(lambda x: x.encode(), types))
 
-        print(attributes)
-        print(types)
-        # gets attributes that should be disclosed in the request from the credential
-        # disclosed_attributes = {}
-        # for idx, attr in enumerate(attributes):
-        #     if attr[1] in types:
-        #         disclosed_attributes[idx] = attr[1]
-
-        user = User(attributes[0], attributes, [attributes[0]])
-        proof = user.create_disclosure_proof(pk, creds, message)
+        user = User(username, creds.all_attributes, [username])
+        proof = user.create_disclosure_proof(pk, creds, message, queried_types)
 
         return jsonpickle.encode(proof).encode()
