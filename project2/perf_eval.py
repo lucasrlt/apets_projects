@@ -76,7 +76,7 @@ def credential_showing(credential_enc):
 def credential_verification(stroll_request_enc):
   server.check_request_signature(pk, message, queried_subscriptions, stroll_request_enc)
 
-  packets[2].append(len(stroll_request_enc * 2))
+  packets[2].append(len(stroll_request_enc))
 
 
 ## Test the successful generation of a credential step by step, as well as a stroll request
@@ -106,7 +106,7 @@ def test_successful_request():
     stroll_request_enc = client.sign_request(pk, credential_enc, message, queried_subscriptions)
     stroll_request: DisclosureProof = decode_data(stroll_request_enc)
 
-    packets[3] += [len(issue_request_enc) * 2 + len(blind_signature_enc) * 2] + [len(credential_enc) * 2 + len(stroll_request_enc) * 2]
+    packets[3] += [(len(issue_request_enc) * 2 + len(blind_signature_enc) * 2) * 1.25] + [(len(credential_enc) * 2 + len(stroll_request_enc) * 2) * 1.25]
 
     # Test that the request is valid
     assert server.check_request_signature(pk, message, queried_subscriptions, stroll_request_enc)

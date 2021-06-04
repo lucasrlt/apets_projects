@@ -256,15 +256,15 @@ def test_invalid_queried_type():
     assert not server.check_request_signature(pk, message, queried_types, stroll_request_enc)
 
 
-print("RUNNING ALL TESTS")
+# print("RUNNING ALL TESTS")
 
-test_key_generation()
-test_successful_request()
-test_credential_request_hidden_tampering()
-test_credential_request_disclosed_tampering()
-test_credential_should_be_different()
-test_message_tampering()
-test_invalid_queried_type()
-test_disclosure_proof_tampering()
+# test_key_generation()
+# test_successful_request()
+# test_credential_request_hidden_tampering()
+# test_credential_request_disclosed_tampering()
+# test_credential_should_be_different()
+# test_message_tampering()
+# test_invalid_queried_type()
+# test_disclosure_proof_tampering()
 
-print("ALL TESTS PASSED!")
+# print("ALL TESTS PASSED!")
